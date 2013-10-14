@@ -1,0 +1,24 @@
+name: quantum 
+file: quantum.py
+description: Operations over Quantum
+
+Services:
+    - name: install
+      description: Install quantum server and configure it
+      methods:
+          - install
+          - set_config_file
+    - name: start
+      description: Start the Quantum service
+      methods: 
+          - start
+    - name: configure_ovs_plugin_vlan
+      description: Configures the Quantum Server to know the VLAN for OVS must be enabled
+      methods:
+          - configure_ovs_plugin_vlan
+    - name: validate
+      description: Validates cinder to operate with it
+      methods:
+          - validate_database
+          - validate_credentials
+          - validate_rabbitmq

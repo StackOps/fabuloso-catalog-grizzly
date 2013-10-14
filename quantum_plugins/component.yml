@@ -1,0 +1,26 @@
+name: quantum_plugins 
+file: quantum_plugins.py
+description: Operations over Quantum Plugins
+
+Services:
+    - name: install
+      description: Install and configure the quantum plugin
+      methods:
+          - compile_datapath
+          - install
+          - set_config_file
+    - name: configure_ovs_plugin_vlan
+      description: Configure the vlan for OpenVSwitch
+      methods:
+          - configure_ovs_plugin_vlan
+    - name: configure_network_agents
+      description: Configures the network node agents
+      methods:
+          - configure_l3_agent
+          - configure_dhcp_agent
+          - configure_metadata_agent
+          - configure_lbaas_agent
+    - name: start
+      description: Starts the plugin
+      methods: 
+          - start
