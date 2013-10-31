@@ -113,6 +113,7 @@ def start():
 
 def uninstall_ubuntu_packages():
     """Uninstall nova packages"""
+    package_clean('python-amqp')
     package_clean('nova-api')
     package_clean('nova-cert')
     package_clean('nova-common')
@@ -128,6 +129,7 @@ def uninstall_ubuntu_packages():
 
 def install(cluster=False):
     """Generate nova configuration. Execute on both servers"""
+    package_ensure('python-amqp')
     package_ensure('nova-api')
     package_ensure('nova-cert')
     package_ensure('nova-common')

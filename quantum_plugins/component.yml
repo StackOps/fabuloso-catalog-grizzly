@@ -9,6 +9,11 @@ Services:
           - compile_datapath
           - install
           - set_config_file
+          - configure_ovs_plugin_vlan
+          - configure_l3_agent
+          - configure_dhcp_agent
+          - configure_metadata_agent
+          - configure_lbaas_agent
     - name: configure_ovs_plugin_vlan
       description: Configure the vlan for OpenVSwitch
       methods:
