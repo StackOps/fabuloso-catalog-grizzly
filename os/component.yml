@@ -13,13 +13,14 @@ Services:
       description: Change the hostname of a remote host
       methods:
           - change_hostname
+    - name: dhcp_request
+      description: the remote node asks for an IP address
+      methods:
+          - dhcp_request
     - name: install
       description: Prepares remote system for a OS with StackOps deployment
       methods:
-          - add_repos
-          - add_nova_user
-          - add_glance_user
-          - change_hostname
+          - install
     - name: parted
       description: make partition
       methods:

@@ -31,7 +31,7 @@ def configure(root_pass='stackops'):
     __configure_ubuntu_packages(root_pass)
     stop()
 
-    sudo('echo "manual" >> /etc/init/mysql.override')
+    #sudo('echo "manual" >> /etc/init/mysql.override')
     sudo('chmod -R og=rxw /var/lib/mysql')
     sudo('chown -R mysql:mysql /var/lib/mysql')
     start()
@@ -46,7 +46,7 @@ def start():
     sudo("nohup service mysql start")
 
 
-def __configure_ubuntu_packages(root_pass):
+def __configure_ubuntu_packages(root_pass='stackops'):
     """Configure mysql ubuntu packages"""
     sudo('echo mysql-server-5.5 mysql-server/root_password password %s'
          ' | debconf-set-selections' % root_pass)
@@ -63,8 +63,8 @@ def stop():
         sudo("nohup service mysql stop")
 
 
-def setup_schema(root_pass, username, password, schema_name,
-                 host=None):
+def setup_schema(root_pass='stackops', username=None, password=None,
+                 schema_name=None, host=None):
 
     sudo('mysql -uroot -p%s -e "DROP DATABASE IF EXISTS %s;"'
          % (root_pass, schema_name))
@@ -123,6 +123,12 @@ def setup_accounting(root_pass='stackops', accounting_user='activity',
                      accounting_password='stackops'):
     setup_schema(username=accounting_user, password=accounting_password,
                  schema_name='activity', root_pass=root_pass)
+
+
+def setup_chargeback(root_pass='stackops', chargeback_user='chargeback',
+                     chargeback_password='stackops'):
+    setup_schema(username=chargeback_user, password=chargeback_password,
+                 schema_name='chargeback', root_pass=root_pass)
 
 
 def setup_automation(root_pass='stackops', automation_user='automation',
