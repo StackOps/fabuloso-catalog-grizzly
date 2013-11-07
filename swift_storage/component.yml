@@ -1,0 +1,37 @@
+name: swift_storage
+file: swift_storage.py
+description: OpenStack Object Storage (Swift) storage
+
+Services:
+    - name: install
+      description: Installs an OpenStack's Swift storage node
+      methods:
+        - install_common_packages
+        - install_common_config
+        - install_storage_packages
+        - install_storage_config
+        - install_rsync_packages
+        - install_rsync_config
+        - postinstall_config
+
+    - name: start
+      description: Starts the OpenStack's Swift storage services
+      methods:
+        - start
+
+    - name: stop
+      description: Stops the OpenStack's Swift storage services
+      methods:
+        - stop
+
+    - name: validate
+      description: Validates an OpenStack's Swift storage node installation
+      methods:
+        - validate_common_config
+        - validate_storage_config
+        - validate_rsync_config
+
+    - name: validate_started
+      description: Validates that the OpenStack's Swift storage services are running
+      methods:
+        - validate_started
