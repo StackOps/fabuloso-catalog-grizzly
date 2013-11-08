@@ -20,7 +20,7 @@ Services:
     - name: install
       description: Prepares remote system for a OS with StackOps deployment
       methods:
-          - install
+          - add_repos
     - name: parted
       description: make partition
       methods:
