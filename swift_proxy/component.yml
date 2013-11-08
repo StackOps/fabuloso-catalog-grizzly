@@ -6,11 +6,8 @@ Services:
     - name: install
       description: Installs an OpenStack's Swift proxy node
       methods:
-        - install_common_packages
-        - install_common_config
         - install_proxy_packages
         - install_proxy_config
-        - postinstall_config
 
     - name: start
       description: Starts the OpenStack's Swift proxy services
@@ -20,7 +17,6 @@ Services:
     - name: validate
       description: Validates an OpenStack's Swift proxy node installation
       methods:
-        - validate_common_config
         - validate_proxy_config
 
     - name: validate_started

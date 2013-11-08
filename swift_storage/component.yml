@@ -6,13 +6,10 @@ Services:
     - name: install
       description: Installs an OpenStack's Swift storage node
       methods:
-        - install_common_packages
-        - install_common_config
         - install_storage_packages
         - install_storage_config
         - install_rsync_packages
         - install_rsync_config
-        - postinstall_config
 
     - name: start
       description: Starts the OpenStack's Swift storage services
@@ -27,7 +24,6 @@ Services:
     - name: validate
       description: Validates an OpenStack's Swift storage node installation
       methods:
-        - validate_common_config
         - validate_storage_config
         - validate_rsync_config
 

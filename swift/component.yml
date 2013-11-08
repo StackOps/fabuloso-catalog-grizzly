@@ -1,0 +1,15 @@
+name: swift
+file: swift.py
+description: Common services for OpenStack Object Storage (Swift)
+
+Services:
+    - name: install
+      description: Installs the common bits of OpenStack's Swift
+      methods:
+        - install_common_packages
+        - install_common_config
+
+    - name: validate
+      description: Validates the common bits of OpenStack's Swift installation
+      methods:
+        - validate_common_config
