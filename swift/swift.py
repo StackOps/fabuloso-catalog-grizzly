@@ -23,6 +23,8 @@ OWNER = {
     'group': 'swift'
 }
 
+RINGS = ('account', 'container', 'object')
+
 
 def install_common_packages():
     # TODO(jaimegildesagredo): Remove this line when swift is packaged
@@ -50,6 +52,55 @@ def install_common_config(
     with cd(CONF_DIR):
         with mode_sudo():
             file_write(CONF_FILE, config, **OWNER)
+
+
+def create_rings(devices, part_power=18, replicas=3, min_part_hours=1):
+    with cd(CONF_DIR):
+        for name in RINGS:
+            builder = '{}.builder'.format(name)
+
+            _create_ring_builder(builder, part_power, replicas, min_part_hours)
+
+            for device in devices:
+                _add_device_to_ring(
+                    builder,
+                    device['zone'],
+                    device['host'],
+                    device['{}_port'.format(name)],
+                    device['name'],
+                    device['weight'])
+
+        for name in RINGS:
+            builder = '{}.builder'.format(name)
+            ring = '{}.ring.gz'.format(name)
+
+            _rebalance_ring(builder)
+
+            with mode_sudo():
+                file_attribs(ring, **OWNER)
+
+
+def _create_ring_builder(name, part_power, replicas, min_part_hours):
+    print 'Creating builder {}'.format(name)
+
+    sudo(_ring_builder(name, 'create', part_power, replicas, min_part_hours))
+
+
+def _add_device_to_ring(builder, zone, host, port, name, weight):
+    sudo(_ring_builder(
+        builder, 'add',
+        'z{}-{}:{}/{} {}'.format(zone, host, port, name, weight)))
+
+
+def _rebalance_ring(builder):
+    sudo(_ring_builder(builder, 'rebalance'))
+
+
+def _ring_builder(*args):
+    command = [str(arg) for arg in args]
+    command.insert(0, 'swift-ring-builder')
+
+    return ' '.join(command)
 
 
 def _ensure_cloud_repos():
@@ -80,6 +131,18 @@ def validate_common_config():
     with cd(CONF_DIR):
         _expect_file_exists(CONF_FILE)
         _expect_owner(CONF_FILE, OWNER)
+
+
+def validate_rings():
+    # TODO(jaimegildesagredo): It would be interesting to validate
+    #                          that each ring contains the given devices.
+
+    with cd(CONF_DIR):
+        for name in RINGS:
+            ring = '{}.ring.gz'.format(name)
+
+            _expect_file_exists(ring)
+            _expect_owner(ring, OWNER)
 
 
 def _expect_dir_exists(path):

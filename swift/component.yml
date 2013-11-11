@@ -9,7 +9,17 @@ Services:
         - install_common_packages
         - install_common_config
 
+    - name: create_rings
+      description: Creates the rings needed  for a OpenStack's Swift installation
+      methods:
+        - create_rings
+
     - name: validate
       description: Validates the common bits of OpenStack's Swift installation
       methods:
         - validate_common_config
+
+    - name: validate_rings
+      description: Validates an OpenStack's Swift node rings
+      methods:
+        - validate_rings
