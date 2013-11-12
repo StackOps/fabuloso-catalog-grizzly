@@ -100,6 +100,8 @@ def set_config_file(user='cinder', password='stackops', auth_host='127.0.0.1',
                      'notifications,monitor')
     utils.set_option(CINDER_CONF, 'default_notification_level', 'INFO')
     '''Check storage types, TODO: Add more storages types   '''
+    utils.set_option(CINDER_CONF, 'scheduler_driver',
+                     'cinder.scheduler.filter_scheduler.FilterScheduler')
 
     utils.set_option(CINDER_API_PASTE_CONF, 'admin_tenant_name',
                      tenant, section='filter:authtoken')
@@ -122,7 +124,8 @@ def configure_nfs_storage(nfs_shares=None, nfs_sparsed_volumes=True,
     shared_nfs_list = nfs_shares.split(',')
     for nfs_share in shared_nfs_list:
         sudo("echo \"%s\" >> %s" % (nfs_share, nfs_shares_config))
-    sudo("chown cinder:cinder %s" % (nfs_shares_config))
+    with settings(warn_only=True):
+        sudo("chown cinder:cinder %s" % (nfs_shares_config))
     utils.set_option(CINDER_CONF, 'volume_driver',
                      'cinder.volume.nfs.NfsDriver')
     utils.set_option(CINDER_CONF, 'nfs_shares_config', nfs_shares_config)
