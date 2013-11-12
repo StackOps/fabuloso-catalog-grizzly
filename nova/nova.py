@@ -206,6 +206,9 @@ def set_config_file(management_ip, user='nova', password='stackops',
                  'nova.scheduler.filter_scheduler.FilterScheduler')
     set_property('compute_scheduler_driver',
                      'nova.scheduler.filter_scheduler.FilterScheduler')
+    set_property('scheduler_default_filters',
+                 'AggregateInstanceExtraSpecsFilter,AvailabilityZoneFilter,'
+                 'RamFilter,ComputeFilter')
     set_property('auth_strategy', 'keystone')
     #set_property('allow_admin_api', 'true')
     #set_property('use_deprecated_auth', 'false')
