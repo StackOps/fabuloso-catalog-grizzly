@@ -25,7 +25,7 @@ def install_storage_config():
     with cd(CONF_DIR):
         for config in STORAGE_CONFIGS:
             with mode_sudo():
-                file_write(config, _template(config, {}))
+                file_write(config, _template(config, {}), **OWNER)
 
 
 def install_rsync_packages():
