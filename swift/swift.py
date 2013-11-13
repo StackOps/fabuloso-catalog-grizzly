@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import os.path
+import tempfile
 
+from fabric.api import get, put, settings
 from cuisine import *
 
 
@@ -78,6 +80,23 @@ def create_rings(devices, part_power=18, replicas=3, min_part_hours=1):
 
             with mode_sudo():
                 file_attribs(ring, **OWNER)
+
+
+def deploy_rings(nodes):
+    local_path = tempfile.mkdtemp(prefix='swift-rings')
+
+    # Download the built rings from the target node
+    with cd(CONF_DIR):
+        get('*.ring.gz', local_path)
+
+    # Upload rings to each node
+    for node in nodes:
+        with settings(host_string=node):
+            for ring in ('{}.ring.gz'.format(name) for name in RINGS):
+                put(os.path.join(local_path, ring), CONF_DIR, use_sudo=True)
+
+                with cd(CONF_DIR), mode_sudo():
+                    file_attribs(ring, **OWNER)
 
 
 def _create_ring_builder(name, part_power, replicas, min_part_hours):
