@@ -6,6 +6,7 @@ from cuisine import *
 
 
 CONF_DIR = '/etc/swift'
+NODE_DIR = '/srv/node'
 STORAGE_CONFIGS = (
     'account-server.conf', 'object-server.conf', 'container-server.conf')
 
@@ -26,6 +27,18 @@ def install_storage_config():
         for config in STORAGE_CONFIGS:
             with mode_sudo():
                 file_write(config, _template(config, {}), **OWNER)
+
+    with mode_sudo():
+        dir_ensure(NODE_DIR, recursive=True, **OWNER)
+
+
+def install_storage_devices(devices):
+    with cd(NODE_DIR):
+        for device in devices:
+            with mode_sudo():
+                dir_ensure(device)
+                mount_ensure('/dev/' + device, device)
+                dir_attribs(device, recursive=True, **OWNER)
 
 
 def install_rsync_packages():
@@ -72,6 +85,17 @@ def validate_storage_config():
             _expect_file_exists(config)
             _expect_owner(config, OWNER)
 
+    _expect_dir_exists(NODE_DIR)
+    _expect_owner(NODE_DIR, OWNER)
+
+
+def validate_storage_devices(devices):
+    with cd(NODE_DIR):
+        for device in devices:
+            _expect_dir_exists(device)
+            _expect_owner(device, OWNER)
+            _expect_mounted(device)
+
 
 def validate_rsync_config():
     _expect_file_exists(RSYNC_CONF)
@@ -87,7 +111,24 @@ def _expect_file_exists(path):
     expect(file_exists(path)).to.be.true
 
 
+def _expect_dir_exists(path):
+    expect(dir_exists(path)).to.be.true
+
+
 def _expect_owner(path, owner):
     attribs = file_attribs_get(path)
 
     expect(attribs).to.have.keys(owner)
+
+
+def _expect_mounted(device):
+    expect(mount_exists(device)).to.be.true
+
+
+def mount_ensure(device, location):
+    if not mount_exists(device):
+        sudo('mount {} {}'.format(device, location))
+
+
+def mount_exists(device):
+    return True if run('mount | grep {} ; true'.format(device)) else False

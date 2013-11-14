@@ -8,6 +8,7 @@ Services:
       methods:
         - install_storage_packages
         - install_storage_config
+        - install_storage_devices
         - install_rsync_packages
         - install_rsync_config
 
@@ -25,6 +26,7 @@ Services:
       description: Validates an OpenStack's Swift storage node installation
       methods:
         - validate_storage_config
+        - validate_storage_devices
         - validate_rsync_config
 
     - name: validate_started
