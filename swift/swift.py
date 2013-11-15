@@ -29,11 +29,6 @@ RINGS = ('account', 'container', 'object')
 
 
 def install_common_packages():
-    # TODO(jaimegildesagredo): Remove this line when swift is packaged
-    #                          in the stackops repos
-
-    _ensure_cloud_repos()
-
     package_ensure('swift')
 
 
@@ -120,12 +115,6 @@ def _ring_builder(*args):
     command.insert(0, 'swift-ring-builder')
 
     return ' '.join(command)
-
-
-def _ensure_cloud_repos():
-    repository_ensure_apt("'deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/grizzly main'")
-    package_ensure('ubuntu-cloud-keyring')
-    package_update()
 
 
 def _template(name, data):
