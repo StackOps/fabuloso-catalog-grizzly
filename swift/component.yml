@@ -13,9 +13,15 @@ Services:
       description: Creates the rings needed for a OpenStack's Swift installation
       methods:
         - create_rings
+        - rebalance_rings
+
+    - name: rebalance_rings
+      description: Rebalances existing rings
+      methods:
+        - rebalance_rings
 
     - name: deploy_rings
-      description: Deploys the OpenStack's Swift node rings
+      description: Deploys existing rings
       methods:
         - deploy_rings
 
@@ -23,6 +29,7 @@ Services:
       description: Adds a new device to the existing rings
       methods:
         - add_device_to_rings
+        - rebalance_rings
 
     - name: validate
       description: Validates the common bits of OpenStack's Swift installation

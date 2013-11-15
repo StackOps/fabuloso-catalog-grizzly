@@ -67,6 +67,9 @@ def create_rings(devices, part_power=18, replicas=3, min_part_hours=1):
                     device['name'],
                     device['weight'])
 
+
+def rebalance_rings():
+    with cd(CONF_DIR):
         for name in RINGS:
             builder = '{}.builder'.format(name)
             ring = '{}.ring.gz'.format(name)
