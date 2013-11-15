@@ -19,6 +19,11 @@ Services:
       methods:
         - deploy_rings
 
+    - name: add_device_to_rings
+      description: Adds a new device to the existing rings
+      methods:
+        - add_device_to_rings
+
     - name: validate
       description: Validates the common bits of OpenStack's Swift installation
       methods:
