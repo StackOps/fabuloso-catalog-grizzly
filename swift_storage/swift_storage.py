@@ -2,6 +2,7 @@
 
 import os.path
 
+from fabric.contrib import files
 from cuisine import *
 
 
@@ -125,9 +126,19 @@ def _expect_mounted(device):
     expect(mount_exists(device)).to.be.true
 
 
-def mount_ensure(device, location):
+def mount_ensure(device, mount_point):
     if not mount_exists(device):
-        sudo('mount {} {}'.format(device, location))
+        sudo('mount {} {}'.format(device, mount_point))
+
+    files.append(
+        '/etc/fstab',
+        _fstab_mount(device, mount_point),
+        use_sudo=True)
+
+
+def _fstab_mount(device, mount_point):
+    return '{} {} xfs noatime,noriatime,nobarrier,logbufs=8 0 0'.format(
+        device, mount_point)
 
 
 def mount_exists(device):
