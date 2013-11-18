@@ -26,6 +26,7 @@ OS_VERSIONS_SUPPORTED = ['3.2.0-26-generic #41-Ubuntu',
                          '3.2.0-26-generic #41-Ubuntu']
 
 REPOS = (
+    # Setting first to highest priority
     'deb http://repos.stackops.net/ grizzly-dev main',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise main universe',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise-security main universe',
@@ -254,7 +255,6 @@ def add_repos():
 
     package_ensure('ubuntu-cloud-keyring')
 
-    # Setting first to highest priority
     sudo('sed -i /precise-updates/d /etc/apt/sources.list')
     sudo('sed -i /precise-security/d /etc/apt/sources.list')
     sudo('sed -i /archive.ubuntu.com/d /etc/apt/sources.list')
