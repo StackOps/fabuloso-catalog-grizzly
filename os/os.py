@@ -12,7 +12,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 from fabric.api import *
+from fabric.contrib import files
 from cuisine import *
 
 try:
@@ -22,6 +24,14 @@ except:
 
 OS_VERSIONS_SUPPORTED = ['3.2.0-26-generic #41-Ubuntu',
                          '3.2.0-26-generic #41-Ubuntu']
+
+REPOS = (
+    # Setting first to highest priority
+    'deb http://repos.stackops.net/ grizzly-dev main',
+    'deb http://us.archive.ubuntu.com/ubuntu/ precise main universe',
+    'deb http://us.archive.ubuntu.com/ubuntu/ precise-security main universe',
+    'deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main universe',
+    'deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/grizzly main')
 
 
 def network_stop():
@@ -239,27 +249,18 @@ def remove_repos():
 def add_repos():
     """Clean and Add necessary repositories and updates"""
 
-    # Install Stackops repos keys
+    # Install Stackops and Ubuntu cloud repos keys
     sudo('wget -O - http://repos.stackops.net/keys/stackopskey_pub.gpg '
          '| apt-key add -')
 
-    # Install Ubuntu cloud repos keys
     package_ensure('ubuntu-cloud-keyring')
 
-    # Setting first to highest priority
-    sudo('echo "deb http://repos.stackops.net/ grizzly-dev main" >> '
-         '/etc/apt/sources.list')
     sudo('sed -i /precise-updates/d /etc/apt/sources.list')
     sudo('sed -i /precise-security/d /etc/apt/sources.list')
     sudo('sed -i /archive.ubuntu.com/d /etc/apt/sources.list')
-    sudo('echo "deb http://us.archive.ubuntu.com/ubuntu/ precise main '
-         'universe" >> /etc/apt/sources.list')
-    sudo('echo "deb http://us.archive.ubuntu.com/ubuntu/ precise-security '
-         'main universe" >> /etc/apt/sources.list')
-    sudo('echo "deb http://us.archive.ubuntu.com/ubuntu/ precise-updates '
-         'main universe" >> /etc/apt/sources.list')
-    sudo('echo "deb http://ubuntu-cloud.archive.canonical.com/ubuntu '
-         'precise-updates/grizzly main" >> /etc/apt/sources.list')
+
+    for repo in REPOS:
+        files.append('/etc/apt/sources.list', repo, use_sudo=True)
 
     sudo('apt-get -y update')
 
