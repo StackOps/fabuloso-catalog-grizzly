@@ -29,7 +29,6 @@ Services:
       description: Adds a new device to the existing rings
       methods:
         - add_device_to_rings
-        - rebalance_rings
 
     - name: validate
       description: Validates the common bits of OpenStack's Swift installation

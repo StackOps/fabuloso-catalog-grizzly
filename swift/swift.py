@@ -104,7 +104,6 @@ def add_device_to_rings(zone, host, name, weight=100,
     with cd(CONF_DIR):
         for ring_name in RINGS:
             builder = '{}.builder'.format(ring_name)
-            ring = '{}.ring.gz'.format(ring_name)
 
             _add_device_to_ring(
                 builder,
@@ -113,11 +112,6 @@ def add_device_to_rings(zone, host, name, weight=100,
                 locals()['{}_port'.format(ring_name)],
                 name,
                 weight)
-
-            _rebalance_ring(builder)
-
-            with mode_sudo():
-                file_attribs(ring, **OWNER)
 
 
 def _create_ring_builder(name, part_power, replicas, min_part_hours):
