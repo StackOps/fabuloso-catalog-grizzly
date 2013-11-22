@@ -3,7 +3,7 @@
 import os.path
 import tempfile
 
-from fabric.api import get, put, settings
+from fabric.api import get, put, warn_only, settings
 from cuisine import *
 
 
@@ -74,7 +74,8 @@ def rebalance_rings():
             builder = '{}.builder'.format(name)
             ring = '{}.ring.gz'.format(name)
 
-            _rebalance_ring(builder)
+            with warn_only():
+                _rebalance_ring(builder)
 
             with mode_sudo():
                 file_attribs(ring, **OWNER)
