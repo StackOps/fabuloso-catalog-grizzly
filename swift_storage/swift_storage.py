@@ -34,12 +34,32 @@ def install_storage_config():
 
 
 def install_storage_devices(devices):
-    with cd(NODE_DIR):
-        for device in devices:
-            with mode_sudo():
-                dir_ensure(device)
-                mount_ensure('/dev/' + device, device)
-                dir_attribs(device, recursive=True, **OWNER)
+    """The `devices` property should be a list of strings or dicts
+    defining storage devices:
+
+    devices = [
+        'sdb1',
+        {
+            'name': 'foo',
+            'path': '/dev/mapper/ubuntu--vg-storage'
+        }
+    ]
+
+    """
+
+    for device, mount_point in __extract_devices(devices):
+        with mode_sudo():
+            dir_ensure(mount_point)
+            mount_ensure(device, mount_point)
+            dir_attribs(mount_point, recursive=True, **OWNER)
+
+
+def __extract_devices(devices):
+    for device in devices:
+        if isinstance(device, dict):
+            yield device['path'], '{}/{}'.format(NODE_DIR, device['name'])
+        else:
+            yield '/dev/{}'.format(device), '{}/{}'.format(NODE_DIR, device)
 
 
 def install_rsync_packages():
