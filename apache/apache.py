@@ -45,17 +45,28 @@ def install():
 
 
 def configure(cluster=False, keystone_host="127.0.0.1",
-              ec2_internal_url="http://127.0.0.1:8773/services/Cloud",
-              compute_internal_url="http://127.0.0.1:8774/v1.1",
-              keystone_internal_url="http://127.0.0.1:5000/v2.0",
-              glance_internal_url="http://127.0.0.1:9292/v1",
-              cinder_internal_url="http://127.0.0.1:8776/v1",
-              quantum_internal_url="http://127.0.0.1:9696/v2.0",
-              portal_internal_url="http://127.0.0.1:8080/portal",
-              activity_internal_url="http://127.0.0.1:8080/activity",
-              chargeback_internal_url="http://127.0.0.1:8080/chargeback",
+              ec2_internal_host="127.0.0.1",
+              compute_internal_host="127.0.0.1",
+              keystone_internal_host="127.0.0.1",
+              glance_internal_host="127.0.0.1",
+              cinder_internal_host="127.0.0.1",
+              quantum_internal_host="127.0.0.1",
+              portal_internal_host="127.0.0.1",
+              activity_internal_host="127.0.0.1",
+              chargeback_internal_host="127.0.0.1",
               common_name='127.0.0.1'):
     """Generate apache configuration. Execute on both servers"""
+    ec2_internal_url="http://" + ec2_internal_host + ":8773/services/Cloud"
+    compute_internal_url="http://" + compute_internal_host + ":8774/v1.1"
+    keystone_internal_url="http://" + keystone_internal_host + ":5000/v2.0"
+    glance_internal_url="http://" + glance_internal_host + ":9292/v1"
+    cinder_internal_url="http://" + cinder_internal_host + ":8776/v1"
+    quantum_internal_url="http://" + quantum_internal_host + ":9696/v2.0"
+    portal_internal_url="http://" + portal_internal_host + ":8080/portal"
+    activity_internal_url="http://" + activity_internal_host + \
+                          ":8080/activity"
+    chargeback_internal_url="http://" + chargeback_internal_host + \
+                            ":8080/chargeback"
     configure_ubuntu_packages()
     if cluster:
         stop()
