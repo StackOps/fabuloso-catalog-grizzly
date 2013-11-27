@@ -8,6 +8,7 @@ Services:
       methods:
           - install
           - set_config_file
+          - start
     - name: nova_properties
       description: Set properties of the Nova service
       methods:
