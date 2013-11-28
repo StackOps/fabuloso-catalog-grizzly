@@ -87,6 +87,20 @@ def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
     utils.set_option(QUANTUM_CONF, 'service_plugins',
                      'quantum.plugins.services.'
                      'agent_loadbalancer.plugin.LoadBalancerPlugin')
+    utils.set_option(QUANTUM_CONF, 'admin_tenant_name',
+                     tenant, section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'admin_user',
+                     user, section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'admin_password',
+                     password, section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'auth_host', auth_host,
+                     section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'auth_port', auth_port,
+                     section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'auth_protocol', auth_protocol,
+                     section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'auth_protocol', auth_protocol,
+                     section='keystone_authtoken')
 
 
 def configure_ovs_plugin_vlan(vlan_start='1', vlan_end='4094',

@@ -316,6 +316,7 @@ def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
     utils.set_option(QUANTUM_API_PASTE_CONF, 'auth_protocol', auth_protocol,
                      section='filter:authtoken')
     cp = 'quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPluginV2'
+    utils.set_option(QUANTUM_CONF, 'verbose', 'True')
     utils.set_option(QUANTUM_CONF, 'core_plugin', cp)
     utils.set_option(QUANTUM_CONF, 'auth_strategy', 'keystone')
     utils.set_option(QUANTUM_CONF, 'fake_rabbit', 'False')
@@ -326,7 +327,20 @@ def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
     utils.set_option(QUANTUM_CONF, 'notification_topics',
                      'notifications,monitor')
     utils.set_option(QUANTUM_CONF, 'default_notification_level', 'INFO')
-
+    utils.set_option(QUANTUM_CONF, 'admin_tenant_name',
+                     tenant, section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'admin_user',
+                     user, section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'admin_password',
+                     password, section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'auth_host', auth_host,
+                     section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'auth_port', auth_port,
+                     section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'auth_protocol', auth_protocol,
+                     section='keystone_authtoken')
+    utils.set_option(QUANTUM_CONF, 'auth_protocol', auth_protocol,
+                     section='keystone_authtoken')
 
 def configure_external_bridge(floating_range):
     sudo('ip addr flush dev br-ex')
