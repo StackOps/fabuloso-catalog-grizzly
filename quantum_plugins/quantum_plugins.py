@@ -297,6 +297,8 @@ def configure_dhcp_agent(name_server='8.8.8.8'):
     utils.set_option(DHCP_AGENT_CONF, 'use_namespaces', 'True')
     utils.set_option(DHCP_AGENT_CONF, 'dnsmasq_dns_server', name_server)
     #utils.set_option(DHCP_AGENT_CONF, 'ovs_use_veth', 'True')
+    utils.set_option(DHCP_AGENT_CONF, 'interface_driver',
+                     'quantum.agent.linux.interface.OVSInterfaceDriver')
 
 
 def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
