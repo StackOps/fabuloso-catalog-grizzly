@@ -27,8 +27,8 @@ OS_VERSIONS_SUPPORTED = ['3.2.0-26-generic #41-Ubuntu',
 
 REPOS = (
     # Setting first to highest priority
-    'deb http://repos.stackops.net/ grizzly-dev main',
-    #'deb http://repos.stackops.net/ grizzly main',
+    #'deb http://repos.stackops.net/ grizzly-dev main',
+    'deb http://repos.stackops.net/ grizzly main',
     #'deb http://repos.stackops.net/ grizzly-updates main',
     #'deb http://repos.stackops.net/ grizzly-security main',
     #'deb http://repos.stackops.net/ grizzly-backports main',
