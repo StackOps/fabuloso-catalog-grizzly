@@ -11,6 +11,7 @@ Services:
           - configure_ntp
           - configure_vhost_net
           - configure_libvirt
+          - configure_network
           - set_config_file
           - configure_quantum
           - configure_ovs_plugin_vlan
