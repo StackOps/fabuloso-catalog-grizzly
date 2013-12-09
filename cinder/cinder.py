@@ -54,7 +54,7 @@ def uninstall():
     package_clean('nfs-common')
     package_clean('python-cinderclient')
     package_clean('python-mysqldb')
-
+    package_clean('qemu-utils')
 
 def install():
     """Generate cinder configuration. Execute on both servers"""
@@ -64,6 +64,7 @@ def install():
     package_ensure('cinder-volume')
     package_ensure('python-cinderclient')
     package_ensure('python-mysqldb')
+    package_ensure('qemu-utils')
 
 
 def set_config_file(service_user='cinder', service_pass='stackops', auth_host='127.0.0.1',
