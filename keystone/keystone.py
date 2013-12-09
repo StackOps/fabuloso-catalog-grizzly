@@ -64,7 +64,7 @@ def _sql_connect_string(host, password, port, schema, username):
     return sql_connection
 
 
-def set_config_file(admin_token='password', mysql_username='keystone',
+def set_config_file(admin_token='stackops', mysql_username='keystone',
                     mysql_password='stackops', mysql_host='127.0.0.1',
                     mysql_port='3306', mysql_schema='keystone'):
     """Configure keystone to use the database and set the default
@@ -144,7 +144,7 @@ def _create_user_for_service(endpoint, service_user_name, admin_token,
 
 
 def configure_users(endpoint="'http://localhost:35357/v2.0'",
-                    admin_token="password", admin_pass="stackops"):
+                    admin_token="stackops", admin_pass="stackops"):
     """Configure basic service users/roles"""
     admin_tenant = _create_tenant(endpoint, admin_token, 'admin')
     head_tenant = _create_tenant(endpoint, admin_token, 'head')
@@ -222,168 +222,136 @@ def _create_service(admin_token, service_name, service_type, description,
             internal_url))
 
 
-def define_keystone_service(admin_token='password', region='RegionOne',
-                            endpoint="'http://localhost:35357/v2.0'",
-                            ks_public_host='localhost',
-                            ks_internal_host='localhost',
-                            ks_admin_host='localhost',
+def define_keystone_service(admin_token='stackops', region='RegionOne',
+                            endpoint="http://localhost:35357/v2.0",
+                            ks_public_url="http://localhost:35357/"
+                                          "keystone/v2.0",
+                            ks_internal_url="http://localhost:5000/v2.0",
+                            ks_admin_url="http://localhost:35357/v2.0",
                             ks_user='keystone',
                             ks_password='stackops'):
-    ks_public_url = 'http://' + ks_public_host + '/keystone/v2.0'
-    ks_internal_url = 'http://' + ks_internal_host + ':5000/v2.0'
-    ks_admin_url = 'http://' + ks_admin_host + ':35357/v2.0'
-
     _create_service(admin_token, 'keystone', 'identity', 'Keystone Identity '
-                                                         'Service', region,
-                    endpoint, ks_public_url,
+                    'Service', region, endpoint, ks_public_url,
                     ks_internal_url, ks_admin_url)
     _create_user_for_service(endpoint, ks_user, admin_token,
                              ks_password, 'service')
 
 
-def define_nova_service(admin_token='password', region='RegionOne',
-                        endpoint="'http://localhost:35357/v2.0'",
-                        nova_public_host='localhost',
-                        nova_internal_host='localhost',
+def define_nova_service(admin_token='stackops', region='RegionOne',
+                        endpoint="http://localhost:35357/v2.0",
+                        nova_public_url="http://localhost/compute/v1.1/"
+                                        "$(tenant_id)s",
+                        nova_internal_url="http://localhost:8774/v1.1/"
+                                          "$(tenant_id)s",
+                        nova_admin_url="http://localhost:8774/v1.1/"
+                                       "$(tenant_id)s",
                         nova_user='nova',
                         nova_password='stackops'):
-    nova_public_url = 'http://' + nova_public_host + \
-                      '/compute/v1.1/$(tenant_id)s'
-    nova_internal_url = ' http://' + nova_internal_host + \
-                        ':8774/v1.1/$(tenant_id)s'
-    nova_admin_url = 'http://' + nova_internal_host + \
-                     ':8774/v1.1/$(tenant_id)s'
-    _create_service(admin_token, 'nova', 'compute', 'OpenStack Compute'
-                                                    'Service', region,
-                    endpoint,
-                    nova_public_url,
+    _create_service(admin_token, 'nova', 'compute', 'OpenStack Computer '
+                    'Service', region, endpoint, nova_public_url,
                     nova_internal_url, nova_admin_url)
     _create_user_for_service(endpoint, nova_user, admin_token,
                              nova_password, 'service')
 
 
-def define_ec2_service(admin_token='password', region='RegionOne',
-                       endpoint="'http://localhost:35357/v2.0'",
-                       ec2_public_host='localhost',
-                       ec2_internal_host='localhost'):
-    ec2_public_url = 'http://' + ec2_public_host + '/services/Cloud'
-    ec2_internal_url = 'http://' + ec2_internal_host + \
-                       'localhost/services/Cloud'
-    ec2_admin_url = 'http://' + ec2_internal_host + '/services/Admin'
+def define_ec2_service(admin_token='stackops', region='RegionOne',
+                       endpoint="http://localhost:35357/v2.0",
+                       ec2_public_url="http://localhost/services/Cloud",
+                       ec2_internal_url="http://localhost/services/Cloud",
+                       ec2_admin_url="http://localhost/services/Admin"):
     _create_service(admin_token, 'ec2', 'ec2', 'EC2 Compatibility '
-                                               'Service', region, endpoint,
-                    ec2_public_url,
+                    'Service', region, endpoint, ec2_public_url,
                     ec2_internal_url, ec2_admin_url)
 
 
-def define_glance_service(admin_token='password', region='RegionOne',
-                          endpoint="'http://localhost:35357/v2.0'",
-                          glance_public_host='localhost',
-                          glance_internal_host='localhost',
+def define_glance_service(admin_token='stackops', region='RegionOne',
+                          endpoint="http://localhost:35357/v2.0",
+                          glance_public_url="http://localhost/glance/v1",
+                          glance_internal_url="http://localhost:9292/v1",
+                          glance_admin_url="http://localhost:9292/v1",
                           glance_user='glance',
                           glance_password='stackops'):
-    glance_public_url = 'http://' + glance_public_host + '/glance'
-    glance_internal_url = 'http://' + glance_internal_host + ':9292'
-    glance_admin_url = 'http://' + glance_internal_host + ':9292'
     _create_service(admin_token, 'glance', 'image', 'Glance Image '
-                                                    'Service', region,
-                    endpoint,
-                    glance_public_url,
+                    'Service', region, endpoint, glance_public_url,
                     glance_internal_url, glance_admin_url)
     _create_user_for_service(endpoint, glance_user, admin_token,
                              glance_password, 'service')
 
 
-def define_quantum_service(admin_token='password', region='RegionOne',
-                           endpoint="'http://localhost:35357/v2.0'",
-                           quantum_public_host='localhost',
-                           quantum_internal_host='localhost',
+def define_quantum_service(admin_token='stackops', region='RegionOne',
+                           endpoint="http://localhost:35357/v2.0",
+                           quantum_public_url="http://localhost/network",
+                           quantum_internal_url="http://localhost:9696",
+                           quantum_admin_url="http://localhost:9696",
                            quantum_user='quantum',
                            quantum_password='stackops'):
-    quantum_public_url = 'http://' + quantum_public_host + '/network'
-    quantum_internal_url = 'http://' + quantum_internal_host + ':9696'
-    quantum_admin_url = 'http://' + quantum_internal_host + ':9696'
     _create_service(admin_token, 'quantum', 'network', 'Network '
-                                                       'Service', region,
-                    endpoint, quantum_public_url,
+                    'Service', region, endpoint, quantum_public_url,
                     quantum_internal_url, quantum_admin_url)
     _create_user_for_service(endpoint, quantum_user, admin_token,
                              quantum_password, 'service')
 
 
-def define_cinder_service(admin_token='password', region='RegionOne',
-                          endpoint="'http://localhost:35357/v2.0'",
-                          cinder_public_host='localhost',
-                          cinder_internal_host='localhost',
+def define_cinder_service(admin_token='stackops', region='RegionOne',
+                          endpoint="http://localhost:35357/v2.0",
+                          cinder_public_url="http://localhost/volume/v1/"
+                                            "$(tenant_id)s",
+                          cinder_internal_url="http://localhost:8776/v1/"
+                                              "$(tenant_id)s",
+                          cinder_admin_url="http://localhost:8776/v1/"
+                                           "$(tenant_id)s",
                           cinder_user='cinder',
                           cinder_password='stackops'):
-    cinder_public_url = 'http://' + cinder_public_host + \
-                        '/volume/v1/$(tenant_id)s'
-    cinder_internal_url = 'http://' + cinder_internal_host + \
-                          ':8776/v1/$(tenant_id)s'
-    cinder_admin_url = 'http://' + cinder_internal_host + \
-                       ':8776/v1/$(tenant_id)s'
     _create_service(admin_token, 'cinder', 'volume', 'OpenStack Volume '
-                                                     'Service', region,
-                    endpoint, cinder_public_url,
+                    'Service', region, endpoint, cinder_public_url,
                     cinder_internal_url, cinder_admin_url)
     _create_user_for_service(endpoint, cinder_user, admin_token,
                              cinder_password, 'service')
 
-
-def define_portal_service(admin_token='password', region='RegionOne',
-                          endpoint="'http://localhost:35357/v2.0'",
-                          portal_public_host='localhost',
-                          portal_internal_host='localhost',
+def define_portal_service(admin_token='stackops', region='RegionOne',
+                          endpoint="http://localhost:35357/v2.0",
+                          portal_public_url="http://localhost/portal",
+                          portal_internal_url="http://localhost:8080/portal",
+                          portal_admin_url="http://localhost:8080/portal",
                           portal_user='portal',
                           portal_password='stackops'):
-    portal_public_url = 'http://' + portal_public_host + '/portal'
-    portal_internal_url = 'http://' + portal_internal_host + ':8080/portal'
-    portal_admin_url = 'http://' + portal_internal_host + ':8080/portal'
     _create_service(admin_token, 'portal', 'portal', 'StackOps Portal '
-                                                     'Service', region,
-                    endpoint, portal_public_url,
+                    'Service', region, endpoint, portal_public_url,
                     portal_internal_url, portal_admin_url)
     _create_user_for_service(endpoint, portal_user, admin_token,
                              portal_password, 'service')
 
 
-def define_accounting_service(admin_token='password', region='RegionOne',
-                              endpoint="'http://localhost:35357/v2.0'",
-                              accounting_public_host='localhost',
-                              accounting_internal_host='localhost',
+def define_accounting_service(admin_token='stackops', region='RegionOne',
+                              endpoint="http://localhost:35357/v2.0",
+                              accounting_public_url="http://localhost/"
+                                                    "activity",
+                              accounting_internal_url="http://localhost:8080/"
+                                                      "activity",
+                              accounting_admin_url="http://localhost:8080/"
+                                                   "activity",
                               accounting_user='activity',
                               accounting_password='stackops'):
-    accounting_public_url = 'http://' + accounting_public_host + \
-                            '/activity'
-    accounting_internal_url = 'http://' + accounting_internal_host + \
-                              ':8080/activity'
-    accounting_admin_url = 'http://' + accounting_internal_host + \
-                           ':8080/activity'
     _create_service(admin_token, 'accounting', 'accounting',
                     'StackOps accounting '
                     'service', region, endpoint, accounting_public_url,
                     accounting_internal_url, accounting_admin_url)
     _create_service(admin_token, 'activity', 'activity', 'stackops activity '
-                                                         'service', region,
-                    endpoint, accounting_public_url,
+                    'service', region, endpoint, accounting_public_url,
                     accounting_internal_url, accounting_admin_url)
     _create_user_for_service(endpoint, accounting_user, admin_token,
                              accounting_password, 'service')
 
-
-def define_chargeback_service(admin_token='password', region='RegionOne',
-                              endpoint="'http://localhost:35357/v2.0'",
-                              chargeback_public_host='localhost',
-                              chargeback_internal_host='localhost',
+def define_chargeback_service(admin_token='stackops', region='RegionOne',
+                              endpoint="http://localhost:35357/v2.0",
+                              chargeback_public_url="http://localhost/"
+                                                    "chargeback",
+                              chargeback_internal_url="http://localhost:8080/"
+                                                      "chargeback",
+                              chargeback_admin_url="http://localhost:8080/"
+                                                   "chargeback",
                               chargeback_user='chargeback',
                               chargeback_password='stackops'):
-    chargeback_public_url = 'http://' + chargeback_public_host + \
-                            '/chargeback'
-    chargeback_internal_url = 'http://' + chargeback_internal_host + \
-                              ':8080/chargeback'
-    chargeback_admin_url = 'http://' + chargeback_internal_host + \
-                           ':8080/chargeback'
     _create_service(admin_token, 'chargeback', 'chargeback',
                     'StackOps chargeback '
                     'service', region, endpoint, chargeback_public_url,
@@ -391,19 +359,16 @@ def define_chargeback_service(admin_token='password', region='RegionOne',
     _create_user_for_service(endpoint, chargeback_user, admin_token,
                              chargeback_password, 'service')
 
-
 def define_automation_service(admin_token='password', region='RegionOne',
-                              endpoint="'http://localhost:35357/v2.0'",
-                              automation_public_host='localhost',
-                              automation_internal_host='localhost',
+                              endpoint="http://localhost:35357/v2.0",
+                              automation_public_url="http://localhost:8089/"
+                                                    "automation",
+                              automation_internal_url="http://localhost:8089/"
+                                                      "v1.1",
+                              automation_admin_url="http://localhost:8089/"
+                                                   "v1.1",
                               automation_user='automation',
                               automation_password='stackops'):
-    automation_public_url = 'http://' + automation_public_host + \
-                            ':8089/automation'
-    automation_internal_url = 'http://' + automation_internal_host + \
-                              ':8089/v1.1'
-    automation_admin_url = 'http://' + automation_internal_host + \
-                           ':8089/v1.1'
     _create_service(admin_token, 'automation', 'automation',
                     'Stackops Automation '
                     'service', region, endpoint, automation_public_url,
@@ -412,17 +377,15 @@ def define_automation_service(admin_token='password', region='RegionOne',
                              automation_password, 'service')
 
 
-def define_swift_service(admin_token='password', region='RegionOne',
-                         endpoint="'http://localhost:35357/v2.0'",
-                         swift_public_host='localhost',
-                         swift_internal_host='localhost',
+def define_swift_service(admin_token='stackops', region='RegionOne',
+                         endpoint="http://localhost:35357/v2.0",
+                         swift_public_url="http://localhost:8888/v1/"
+                                          "AUTH_%(tenant_id)s",
+                         swift_internal_url="http://localhost:8888/v1/"
+                                            "AUTH_%(tenant_id)s",
+                         swift_admin_url="http://localhost:8888/v1",
                          swift_user='swift', swift_password='stackops'):
-    swift_public_url = 'http://' + swift_public_host + \
-                       ':8888/v1/AUTH_%(tenant_id)s'
-    swift_internal_url = 'http://' + swift_internal_host + \
-                         ':8888/v1/AUTH_%(tenant_id)s'
-    swift_admin_url = 'http://' + swift_internal_host + \
-                      ':8888/v1'
+
     _create_service(
         admin_token, 'swift', 'object-store',
         'OpenStack Object-Store service', region, endpoint,
@@ -432,7 +395,7 @@ def define_swift_service(admin_token='password', region='RegionOne',
                              swift_password, 'service')
 
 
-def configure_services(admin_token="password", public_ip='127.0.0.1',
+def configure_services(admin_token="stackops", public_ip='127.0.0.1',
                        public_port='80', internal_ip='127.0.0.1',
                        region='RegionOne'):
     """Configure services and endpoints"""

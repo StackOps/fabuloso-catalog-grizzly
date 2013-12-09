@@ -159,6 +159,9 @@ def configure_all_schemas(root_pass='stackops', password='stackops',
     setup_schema(username='accounting', schema_name='accounting',
                  root_pass=root_pass,
                  password=password, drop_previous=False, mysql_host=mysql_host)
+    setup_schema(username='chargeback', schema_name='chargeback',
+                 root_pass=root_pass,
+                 password=password, drop_previous=False, mysql_host=mysql_host)
     setup_schema(username='automation', schema_name='automation',
                  root_pass=root_pass,
                  password=password, drop_previous=False, mysql_host=mysql_host)
