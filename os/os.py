@@ -29,9 +29,17 @@ REPOS = (
     # Setting first to highest priority
     #'deb http://repos.stackops.net/ grizzly-dev main',
     'deb http://repos.stackops.net/ grizzly main',
-    #'deb http://repos.stackops.net/ grizzly-updates main',
-    #'deb http://repos.stackops.net/ grizzly-security main',
-    #'deb http://repos.stackops.net/ grizzly-backports main',
+    'deb http://repos.stackops.net/ grizzly-updates main',
+    'deb http://repos.stackops.net/ grizzly-security main',
+    'deb http://repos.stackops.net/ grizzly-backports main',
+    'deb http://us.archive.ubuntu.com/ubuntu/ precise main universe',
+    'deb http://us.archive.ubuntu.com/ubuntu/ precise-security main universe',
+    'deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main universe',
+    'deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/grizzly main')
+
+REPOS_DEV = (
+    # Setting first to highest priority
+    'deb http://repos.stackops.net/ grizzly-dev main',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise main universe',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise-security main universe',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main universe',
@@ -56,9 +64,9 @@ def _configureBondFile(bond_name, bond_slaves, bond_options):
         'auto %s' % bond_name,
         'iface %s inet manual' % bond_name,
         '\tbond-slaves none',
-        '\n'.join(('\tbond-'+' '.join(o.split('=', 1))
+        '\n'.join(('\tbond-' + ' '.join(o.split('=', 1))
                    for o in bond_options.split(',')))
-        ))
+    ))
 
     def _clean_auto(line):
         parts = line.split()
@@ -132,10 +140,10 @@ def _bits2netmask(bits):
         if bits > 7:
             parts.append('255')
         else:
-            parts.append(str((255 ^ 2 ** (8-bits)) + 1))
+            parts.append(str((255 ^ 2 ** (8 - bits)) + 1))
         bits -= 8
     if len(parts) < 4:
-        parts.extend(['0']*(4-len(parts)))
+        parts.extend(['0'] * (4 - len(parts)))
     return '.'.join(parts)
 
 
@@ -232,7 +240,7 @@ def add_glance_user():
                 shell='/bin/false')
 
 
-def configure_ntp(ntpHost):
+def configure_ntp(ntpHost="automation"):
     """Change default ntp server to client choice"""
     sudo("sed -i 's/server ntp.ubuntu.com/server %s/g' /etc/ntp.conf" %
          ntpHost)
@@ -250,12 +258,13 @@ def remove_repos():
     sudo('apt-get -y update')
 
 
-def add_repos():
+def add_repos(dev="false"):
     """Clean and Add necessary repositories and updates"""
 
     # Install Stackops and Ubuntu cloud repos keys
-    sudo('wget -O - http://repos.stackops.net/keys/stackopskey_pub.gpg '
-         '| apt-key add -')
+    with settings(warn_only=True):
+        sudo('wget -O - http://repos.stackops.net/keys/stackopskey_pub.gpg '
+             '| apt-key add -')
 
     with settings(warn_only=True):
         sudo('echo "''" > /etc/apt/sources.list.d/stackops.list')
@@ -266,7 +275,11 @@ def add_repos():
     sudo('sed -i /precise-security/d /etc/apt/sources.list')
     sudo('sed -i /archive.ubuntu.com/d /etc/apt/sources.list')
 
-    for repo in REPOS:
+    if str(dev).lower() == "false":
+        for repo in REPOS:
+            files.append('/etc/apt/sources.list', repo, use_sudo=True)
+    else
+    for repo in REPOS_DEV:
         files.append('/etc/apt/sources.list', repo, use_sudo=True)
 
     sudo('apt-get -y update')
@@ -291,38 +304,160 @@ def clean_interfaces_file():
     sudo("echo '%s' > /etc/network/interfaces" % interfaces)
 
 
-def add_iface(iface=None, dhcp=False, static=True, address=None, netmask=None,
-              gateway=None, broadcast=None, network=None, dns_list=None,
-              domain=None, bridge=None):
+def configure_network(management_iface="eth0",
+                      management_dhcp="true",
+                      management_static="true",
+                      management_address="",
+                      management_netmask="",
+                      management_gateway="",
+                      management_broadcast="",
+                      management_network="",
+                      management_dns_list="",
+                      management_domain="",
+                      management_bridge="",
+                      management_mtu="",
+                      management_txqueuelen="",
+                      service_iface="",
+                      service_dhcp="false",
+                      service_static="false",
+                      service_address="",
+                      service_netmask="",
+                      service_gateway="",
+                      service_broadcast="",
+                      service_network="",
+                      service_dns_list="",
+                      service_domain="",
+                      service_bridge="",
+                      service_mtu="",
+                      service_txqueuelen="",
+                      public_iface="",
+                      public_dhcp="false",
+                      public_static="false",
+                      public_address="",
+                      public_netmask="",
+                      public_gateway="",
+                      public_broadcast="",
+                      public_network="",
+                      public_dns_list="",
+                      public_domain="",
+                      public_bridge="",
+                      public_mtu="",
+                      public_txqueuelen="",
+                      storage_iface="",
+                      storage_dhcp="false",
+                      storage_static="true",
+                      storage_address="",
+                      storage_netmask="",
+                      storage_gateway="",
+                      storage_broadcast="",
+                      storage_network="",
+                      storage_dns_list="",
+                      storage_domain="",
+                      storage_bridge="",
+                      storage_mtu="",
+                      storage_txqueuelen=""):
+    clean_interfaces_file()
+    if management_iface != None and len(management_iface) > 0:
+        add_iface(iface=management_iface,
+                  dhcp=management_dhcp,
+                  static=management_static,
+                  address=management_address,
+                  netmask=management_netmask,
+                  gateway=management_gateway,
+                  broadcast=management_broadcast,
+                  network=management_network,
+                  dns_list=management_dns_list,
+                  domain=management_domain,
+                  bridge=management_bridge,
+                  mtu=management_mtu,
+                  txqueuelen=management_txqueuelen)
+    if service_iface != None and len(service_iface) > 0:
+        add_iface(iface=service_iface,
+                  dhcp=service_dhcp,
+                  static=service_static,
+                  address=service_address,
+                  netmask=service_netmask,
+                  gateway=service_gateway,
+                  broadcast=service_broadcast,
+                  network=service_network,
+                  dns_list=service_dns_list,
+                  domain=service_domain,
+                  bridge=service_bridge,
+                  mtu=service_mtu,
+                  txqueuelen=service_txqueuelen)
+    if public_iface != None and len(public_iface) > 0:
+        add_iface(iface=public_iface,
+                  dhcp=public_dhcp,
+                  static=public_static,
+                  address=public_address,
+                  netmask=public_netmask,
+                  gateway=public_gateway,
+                  broadcast=public_broadcast,
+                  network=public_network,
+                  dns_list=public_dns_list,
+                  domain=public_domain,
+                  bridge=public_bridge,
+                  mtu=public_mtu,
+                  txqueuelen=public_txqueuelen)
+    if storage_iface != None and len(storage_iface) > 0:
+        add_iface(iface=storage_iface,
+                  dhcp=storage_dhcp,
+                  static=storage_static,
+                  address=storage_address,
+                  netmask=storage_netmask,
+                  gateway=storage_gateway,
+                  broadcast=storage_broadcast,
+                  network=storage_network,
+                  dns_list=storage_dns_list,
+                  domain=storage_domain,
+                  bridge=storage_bridge,
+                  mtu=storage_mtu,
+                  txqueuelen=storage_txqueuelen)
+
+
+def add_iface(iface="", dhcp="false", static="true", address="", netmask="", gateway="", broadcast="", network="",
+              dns_list="", domain="", bridge="", mtu="", txqueuelen=""):
     """Update /etc/network/interfaces with info for the current scheme"""
     interfaces = sudo('cat "/etc/network/interfaces"')
 
     # Write the entry for the new interface
+    interfaces += "\n \n# STARTS CONFIGURATION OF %s" % iface
     interfaces += "\nauto %s" % iface
-    if dhcp:
+    if str(dhcp).lower() == "true":
         interfaces += "\niface %s inet dhcp" % iface
     else:
-        if static:
+        if str(static).lower() == "true":
             interfaces += "\niface %s inet static" % iface
+            if len(str(address)) > 0:
+                interfaces += "\n\taddress %s" % address
+            if len(str(netmask)) > 0:
+                interfaces += "\n\tnetmask %s" % netmask
+            if len(str(gateway)) > 0:
+                interfaces += "\n\tgateway %s" % gateway
+            if len(str(broadcast)) > 0:
+                interfaces += "\n\tbroadcast %s" % broadcast
+            if len(str(network)) > 0:
+                interfaces += "\n\tnetwork %s" % network
+            if len(str(dns_list)) > 0:
+                interfaces += "\n\tdns-nameservers %s" % dns_list
+            if len(str(domain)) > 0:
+                interfaces += "\n\tdns-search %s" % domain
+            if len(str(bridge)) > 0:
+                interfaces += "\n\tbridge_ports %s" % bridge
+                interfaces += "\n\tbridge_maxwait 0"
+                interfaces += "\n\tbridge_fd 0 "
+                interfaces += "\n\tbridge_stp off"
         else:
             interfaces += "\niface %s inet manual" % iface
+            interfaces += "\n\tup ifconfig $IFACE 0.0.0.0 up"
+            interfaces += "\n\tup ip link set $IFACE promisc on"
+            interfaces += "\n\tdown ifconfig $IFACE down"
+        if len(str(mtu)) > 0:
+            interfaces += "\n\tup ifconfig $IFACE mtu %s" % mtu
+        if len(str(txqueuelen)) > 0:
+            interfaces += "\n\tup ifconfig $IFACE txqueuelen %s" % txqueuelen
 
-    interfaces += "\n\taddress %s" % address
-    interfaces += "\n\tnetmask %s" % netmask
-    if gateway:
-        interfaces += "\n\tgateway %s" % gateway
-    interfaces += "\n\tbroadcast %s" % broadcast
-    interfaces += "\n\tnetwork %s" % network
-    if dns_list:
-        interfaces += "\n\tdns-nameservers %s" % dns_list
-    if domain:
-        interfaces += "\n\tdns-search %s" % domain
-    if bridge:
-        interfaces += "\n\tbridge_ports %s" % bridge
-        interfaces += "\n\tbridge_maxwait 0"
-        interfaces += "\n\tbridge_fd 0 "
-        interfaces += "\n\tbridge_stp off"
-    interfaces += "\n"
+    interfaces += "\n# ENDS CONFIGURATION OF %s" % iface
     sudo("echo '%s' > /etc/network/interfaces" % interfaces)
 
 
@@ -369,10 +504,10 @@ def iface_list():
     for x in ifaces:
         y = x.strip()
         if ((y != "lo")
-                and not(y.startswith("vir"))
-                and not(y.startswith("br"))
-                and not(y.startswith("vnet"))
-                and not(y.startswith("pan"))):
+            and not (y.startswith("vir"))
+            and not (y.startswith("br"))
+            and not (y.startswith("vnet"))
+            and not (y.startswith("pan"))):
             ifaces_list.append(y)
     puts(ifaces_list)
     return ifaces_list
@@ -380,7 +515,7 @@ def iface_list():
 
 def iface_vendor(iface):
     tmp = sudo("lshw -short -c network | grep '%s'" % iface).splitlines()
-    vendor = tmp[len(tmp)-1][43:]
+    vendor = tmp[len(tmp) - 1][43:]
     puts(vendor)
     return vendor
 
@@ -422,8 +557,8 @@ def block_devices():
     inf = []
     for device in parts:
         dev = {}
-        if ('/dev/'+device[3] in mountvalid):
-            dev['mountpoint'] = mountvalid['/dev/'+device[3]][2]
+        if ('/dev/' + device[3] in mountvalid):
+            dev['mountpoint'] = mountvalid['/dev/' + device[3]][2]
             try:
                 s = os.statvfs(dev['mountpoint'])
                 dev['size'] = s.f_bsize * s.f_blocks
@@ -434,7 +569,7 @@ def block_devices():
             dev['mountpoint'] = ''
             dev['size'] = int(device[2]) * 1024
             dev['used'] = -1
-        dev['device'] = '/dev/'+device[3]
+        dev['device'] = '/dev/' + device[3]
         inf.append(dev)
     puts(inf)
     return inf
@@ -454,17 +589,18 @@ def nameservers():
 def network_config():
     def getDhcpInfo(device):
         info = {'address': 'none', 'netmask': 'none', 'gateway': 'none'}
-        mnt = sudo('LC_ALL=c ifconfig '+device)
+        mnt = sudo('LC_ALL=c ifconfig ' + device)
         match = re.search(r'inet addr:(\S+).*mask:(\S+)', mnt, re.I)
         if match:
             info['address'] = match.group(1)
             info['netmask'] = match.group(2)
         mnt = sudo('route -n ')
-        match = re.search(r'^0.0.0.0\s+(\S+).*'+re.escape(device),
+        match = re.search(r'^0.0.0.0\s+(\S+).*' + re.escape(device),
                           mnt, re.I | re.M)
         if match:
             info['gateway'] = match.group(1)
         return info
+
     inf = []
     mnt = sudo('cat /etc/network/interfaces | egrep -v "^s*(#|$)"')
     devnets = mnt.split('auto')
@@ -486,9 +622,9 @@ def network_config():
                 dev['bond-master'] = "none"
                 for e in net:
                     params = e.strip().split(' ')
-                    if params[len(params)-1] == 'dhcp':
+                    if params[len(params) - 1] == 'dhcp':
                         dev['dhcp'] = "true"
-                    if params[len(params)-1] == 'static':
+                    if params[len(params) - 1] == 'static':
                         dev['dhcp'] = "false"
                     if params[0] == 'address':
                         dev['address'] = params[1]
@@ -545,3 +681,41 @@ def execute_bootstrap():
 
 def install():
     pass
+
+
+def config_10gnetwork(config="false"):
+    if str(config).lower() == "true":
+        tengfile = text_strip_margin('''
+        |# 10GbE Kernel Parameters
+        |net.core.rmem_default=262144
+        |net.core.rmem_max=16777216
+        |net.core.wmem_default=262144
+        |net.core.wmem_max=16777216
+        |net.ipv4.tcp_rmem="4096 262144 16777216"
+        |net.ipv4.tcp_wmem="4096 262144 16777216"
+        |net.ipv4.tcp_window_scaling=1
+        |net.ipv4.tcp_syncookies=0
+        |net.ipv4.tcp_timestamps=0
+        |net.ipv4.tcp_sack=0
+        |net.ipv4.tcp_no_metrics_save=1
+        |net.ipv4.tcp_congestion_control="cubic"
+        |net.core.netdev_max_backlog=250000
+        |net.ipv4.tcp_mtu_probing=1
+        |''')
+        file_write('/etc/sysctl.d/10-10g.conf', tengfile, sudo=True)
+        sudo('sysctl -p /etc/sysctl.d/10-10g.conf')
+
+
+def config_memorybuffers(config="false", dirty_bytes="20971520", dirty_background_bytes="10485760",
+                         dirty_writeback_centisecs="3000", dirty_expire_centisecs="6000", swappiness="0"):
+    if str(config).lower() == "true":
+        memorybuffersfile = text_strip_margin('''
+        |# Memory buffers parameters
+        |vm.dirty_bytes = %s
+        |vm.dirty_background_bytes = %s
+        |vm.dirty_writeback_centisecs = %s
+        |vm.dirty_expire_centisecs = %s
+        |vm.swappiness = %
+        |''' % (dirty_bytes, dirty_background_bytes, dirty_writeback_centisecs, dirty_expire_centisecs, swappiness))
+        file_write('/etc/sysctl.d/10-dirtybytes.conf ', memorybuffersfile, sudo=True)
+        sudo('sysctl -p /etc/sysctl.d/10-dirtybytes.conf ')

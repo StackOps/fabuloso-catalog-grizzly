@@ -20,8 +20,31 @@ Services:
     - name: install
       description: Prepares remote system for a OS with StackOps deployment
       methods:
+          - configure_network
+          - network_restart
+          - configure_ntp
           - add_repos
+          - add_nova_user
+          - add_glance_user
+          - config_10gnetwork
+          - config_memorybuffers
     - name: parted
       description: make partition
       methods:
           - parted
+    - name: configure_network
+      description: Configure the network of the node
+      methods:
+          - configure_network
+    - name: configure_10gnetwork
+      description: Configure the Kernel for 10G networks
+      methods:
+          - config_10gnetwork
+    - name: configure_memorybuffers
+      description: Configure the Kernel to size the memory buffers
+      methods:
+          - config_memorybuffers
+    - name: configure_ntp
+      description: Configure the ntp server to point to automation
+      methods:
+          - configure_ntp
