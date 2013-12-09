@@ -1,0 +1,17 @@
+name: apache_lb
+file: apache_lb.py
+description: HTTP proxy load balancer using Apache
+
+Services:
+    - name: install
+      description: Installs and configures a HTTP proxy load balancer
+      methods:
+        - install_apache
+        - configure_apache
+
+    - name: validate
+      description: Validates the installation and configuration of the HTTP
+                   proxy load balancer
+
+      methods:
+        - validate_apache_config
