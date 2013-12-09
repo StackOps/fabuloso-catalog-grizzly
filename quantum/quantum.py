@@ -63,15 +63,14 @@ def install(cluster=False):
     if cluster:
         stop()
 
-
-def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
-                    auth_port='35357', auth_protocol='http', tenant='service'):
+def set_config_file(service_user='quantum', service_tenant_name='service', service_pass='stackops',auth_host='127.0.0.1',
+                        auth_port='35357', auth_protocol='http'):
     utils.set_option(QUANTUM_API_PASTE_CONF, 'admin_tenant_name',
-                     tenant, section='filter:authtoken')
+                     service_tenant_name, section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'admin_user',
-                     user, section='filter:authtoken')
+                     service_user, section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'admin_password',
-                     password, section='filter:authtoken')
+                     service_pass, section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'auth_host', auth_host,
                      section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'auth_port',
@@ -88,11 +87,11 @@ def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
                      'quantum.plugins.services.'
                      'agent_loadbalancer.plugin.LoadBalancerPlugin')
     utils.set_option(QUANTUM_CONF, 'admin_tenant_name',
-                     tenant, section='keystone_authtoken')
+                     service_tenant_name, section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'admin_user',
-                     user, section='keystone_authtoken')
+                     service_user, section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'admin_password',
-                     password, section='keystone_authtoken')
+                     service_pass, section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'auth_host', auth_host,
                      section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'auth_port', auth_port,
@@ -103,27 +102,37 @@ def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
                      section='keystone_authtoken')
 
 
-def configure_ovs_plugin_vlan(vlan_start='1', vlan_end='4094',
+def configure_ovs_plugin_vlan(config_ovs_vlan="false", vlan_start='1', vlan_end='4094',
                               mysql_username='quantum',
                               mysql_password='stackops',
                               mysql_host='127.0.0.1',
                               mysql_port='3306', mysql_schema='quantum'):
-    utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
-                     utils.sql_connect_string(mysql_host, mysql_password,
-                                              mysql_port, mysql_schema,
-                                              mysql_username),
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type', 'vlan',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'network_vlan_ranges', 'physnet1:%s:%s'
-                     % (vlan_start, vlan_end), section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
-                     'sudo /usr/bin/quantum-rootwrap '
-                     '/etc/quantum/rootwrap.conf',
-                     section='AGENT')
+    if str(config_ovs_vlan).lower() == "true":
+        utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
+                         utils.sql_connect_string(mysql_host, mysql_password,
+                                                  mysql_port, mysql_schema,
+                                                  mysql_username),
+                         section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
+                         section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type', 'vlan',
+                         section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'network_vlan_ranges', 'physnet1:%s:%s'
+                         % (vlan_start, vlan_end), section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
+                         'sudo /usr/bin/quantum-rootwrap '
+                         '/etc/quantum/rootwrap.conf',
+                         section='AGENT')
 
+def configure_ovs_plugin_gre(config_ovs_gre="false", mysql_username='quantum',tunnel_start='1',tunnel_end='1000',
+                             mysql_password='stackops', mysql_host='127.0.0.1', mysql_port='3306', mysql_schema='quantum'):
+    if str(config_ovs_gre).lower() == "true":
+        utils.set_option(OVS_PLUGIN_CONF,'sql_connection',utils.sql_connect_string(mysql_host, mysql_password, mysql_port, mysql_schema, mysql_username),section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF,'reconnect_interval','2',section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF,'tenant_network_type','gre',section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'tunnel_id_ranges','%s:%s' % (tunnel_start,tunnel_end),section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'enable_tunneling','True',section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'root_helper','sudo /usr/bin/quantum-rootwrap /etc/quantum/rootwrap.conf',section='AGENT')
 
 def validate_database(database_type, username, password, host, port,
                       schema, drop_schema=None, install_database=None):

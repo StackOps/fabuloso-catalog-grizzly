@@ -8,15 +8,21 @@ Services:
       methods:
           - install
           - set_config_file
+          - configure_nfs_storage
+          - configure_lvm_storage
+          - start
     - name: start
       description: Start the cinder service
       methods: 
-          - iscsi_start
           - start
-    - name: create_volume
-      description: Create a volume with cinder
+    - name: iscsi_start
+      description: Start the iscsi tgt service
       methods:
-          - create_volume
+          - iscsi_start
+    - name: configure_lvm_storage
+      description: Create cinder driver for LVM storage
+      methods:
+          - configure_lvm_storage
     - name: configure_nfs_storage
       description: Configure cinder driver for NFS storage
       methods:

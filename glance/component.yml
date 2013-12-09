@@ -8,6 +8,8 @@ Services:
       methods:
           - install
           - set_config_file
+          - configure_local_storage
+          - configure_nfs_storage
     - name: prepare_image
       description: Downloads an image from amazon and publishes it into glance
       methods:

@@ -13,10 +13,18 @@ Services:
       description: Set properties of the Nova service
       methods:
           - nova_properties
-    - name: start
-      description: Start Nova Service
+    - name: show_properties
+      description: Show all the properties of the Nova service
+      methods:
+          - get_properties
+    - name: restart
+      description: Stop and start the Nova Services
       methods:
           - start
+    - name: set_property
+      description: Set a nova property
+      methods:
+          - set_property
     - name: validate
       description: Validates nova to operate with it
       methods:

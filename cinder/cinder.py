@@ -13,8 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 from fabric.api import settings, sudo
-from cuisine import package_clean, package_ensure
-from fabuloso import fabuloso
+from cuisine import package_clean, package_ensure, file_exists
 
 import fabuloso.utils as utils
 
@@ -52,6 +51,7 @@ def uninstall():
     package_clean('cinder-scheduler')
     package_clean('cinder-volume')
     package_clean('tgt')
+    package_clean('nfs-common')
     package_clean('python-cinderclient')
     package_clean('python-mysqldb')
 
@@ -62,21 +62,16 @@ def install():
     package_ensure('cinder-api')
     package_ensure('cinder-scheduler')
     package_ensure('cinder-volume')
-    package_ensure('tgt')
     package_ensure('python-cinderclient')
     package_ensure('python-mysqldb')
-    sudo("echo 'include /var/lib/cinder/volumes/*' > "
-         "/etc/tgt/conf.d/cinder.conf")
-    sudo("echo 'include /etc/tgt/conf.d/cinder.conf' > /etc/tgt/targets.conf")
 
 
-def set_config_file(user='cinder', password='stackops', auth_host='127.0.0.1',
+def set_config_file(service_user='cinder', service_pass='stackops', auth_host='127.0.0.1',
                     auth_port='35357', auth_protocol='http',
-                    mysql_username='cinder',
-                    mysql_password='stackops', mysql_host='127.0.0.1',
-                    mysql_port='3306', mysql_schema='cinder', tenant='service',
-                    rabbit_password='guest', rabbit_host='localhost',
-                    iscsi_ip_address='127.0.0.1'):
+                    mysql_username='cinder', mysql_password='stackops',
+                    mysql_schema='cinder', service_tenant_name='service',
+                    mysql_host='127.0.0.1', mysql_port='3306',
+                    rabbit_password='guest', rabbit_host='localhost'):
 
     utils.set_option(CINDER_CONF, 'rootwrap_config',
                      '/etc/cinder/rootwrap.conf')
@@ -91,24 +86,20 @@ def set_config_file(user='cinder', password='stackops', auth_host='127.0.0.1',
     utils.set_option(CINDER_CONF, 'verbose', 'true')
     utils.set_option(CINDER_CONF, 'api_paste_config',
                      '/etc/cinder/api-paste.ini')
-    utils.set_option(CINDER_CONF, 'volume_group', 'cinder-volumes')
-    utils.set_option(CINDER_CONF, 'iscsi_ip_address', iscsi_ip_address)
     utils.set_option(CINDER_CONF, 'log_dir', '/var/log/cinder')
     utils.set_option(CINDER_CONF, 'notification_driver',
                      'cinder.openstack.common.notifier.rabbit_notifier')
     utils.set_option(CINDER_CONF, 'notification_topics',
                      'notifications,monitor')
     utils.set_option(CINDER_CONF, 'default_notification_level', 'INFO')
-    '''Check storage types, TODO: Add more storages types   '''
     utils.set_option(CINDER_CONF, 'scheduler_driver',
                      'cinder.scheduler.filter_scheduler.FilterScheduler')
-
     utils.set_option(CINDER_API_PASTE_CONF, 'admin_tenant_name',
-                     tenant, section='filter:authtoken')
+                     service_tenant_name, section='filter:authtoken')
     utils.set_option(CINDER_API_PASTE_CONF, 'admin_user',
-                     user, section='filter:authtoken')
+                     service_user, section='filter:authtoken')
     utils.set_option(CINDER_API_PASTE_CONF, 'admin_password',
-                     password, section='filter:authtoken')
+                     service_pass, section='filter:authtoken')
     utils.set_option(CINDER_API_PASTE_CONF, 'auth_host', auth_host,
                      section='filter:authtoken')
     utils.set_option(CINDER_API_PASTE_CONF, 'auth_port', auth_port,
@@ -118,27 +109,44 @@ def set_config_file(user='cinder', password='stackops', auth_host='127.0.0.1',
     sudo('cinder-manage db sync')
 
 
-def configure_nfs_storage(nfs_server=None, nfs_sparsed_volumes=True,
+def configure_nfs_storage(config_cinder_nfs="false", nfs_endpoints="", nfs_sparsed_volumes="true",
                           nfs_shares_config="/var/lib/cinder/nfsshare.conf"):
-    ''' Write the list with nfs storage list '''
-    shared_nfs_list = nfs_server.split(',')
-    for nfs_share in shared_nfs_list:
-        sudo("echo \"%s\" >> %s" % (nfs_share, nfs_shares_config))
-    with settings(warn_only=True):
-        sudo("chown cinder:cinder %s" % (nfs_shares_config))
-    utils.set_option(CINDER_CONF, 'volume_driver',
-                     'cinder.volume.nfs.NfsDriver')
-    utils.set_option(CINDER_CONF, 'nfs_shares_config', nfs_shares_config)
-    utils.set_option(CINDER_CONF, 'nfs_mount_point_base',
-                     '/var/lib/cinder/volumes/')
-    utils.set_option(CINDER_CONF, 'nfs_disk_util', 'df')
-    utils.set_option(CINDER_CONF, 'nfs_sparsed_volumes',
-                     nfs_sparsed_volumes)
+    if str(config_cinder_nfs).lower() == "true":
+        package_ensure('nfs-common')
+        ''' Write the list with nfs storage list '''
+        shared_nfs_list = nfs_endpoints.split(',')
+        for nfs_share in shared_nfs_list:
+            sudo("echo \"%s\" >> %s" % (nfs_share, nfs_shares_config))
+        with settings(warn_only=True):
+            sudo("chown cinder:cinder %s" % (nfs_shares_config))
+        utils.set_option(CINDER_CONF, 'volume_driver',
+                         'cinder.volume.nfs.NfsDriver')
+        utils.set_option(CINDER_CONF, 'nfs_shares_config', nfs_shares_config)
+        utils.set_option(CINDER_CONF, 'nfs_mount_point_base',
+                         '/var/lib/cinder/volumes/')
+        utils.set_option(CINDER_CONF, 'nfs_disk_util', 'df')
+        utils.set_option(CINDER_CONF, 'nfs_sparsed_volumes',
+                         nfs_sparsed_volumes)
 
+def configure_lvm_storage(config_cinder_lvm="false", partition='/dev/sdb', lvm_force_delete="false", lvm_vgroup_name="cinder-volumes", lvm_iscsi_ip_address=""):
+    if str(config_cinder_lvm).lower() == "true":
+        package_ensure('tgt')
+        sudo("echo 'include /var/lib/cinder/volumes/*' > "
+             "/etc/tgt/conf.d/cinder.conf")
+        sudo("echo 'include /etc/tgt/conf.d/cinder.conf' > /etc/tgt/targets.conf")
+        create_volume(partition, lvm_force_delete, lvm_vgroup_name)
+        utils.set_option(CINDER_CONF, 'volume_driver',
+                         'cinder.volume.lvm.LVMVolumeDriver')
+        utils.set_option(CINDER_CONF, 'volume_group' % lvm_vgroup_name)
+        utils.set_option(CINDER_CONF, 'iscsi_ip_address', lvm_iscsi_ip_address)
+        iscsi_start()
 
-def create_volume(partition='/dev/sdb1'):
-    sudo('pvcreate %s' % partition)
-    sudo('vgcreate cinder-volumes %s' % partition)
+def create_volume(partition='/dev/sdb1', lvm_force_delete="false", lvm_vgroup_name="cinder-volumes"):
+    if str(lvm_force_delete).lower() == "true":
+        sudo('pvcreate -ff -y %s' % partition)
+    else:
+        sudo('pvcreate %s' % partition)
+    sudo('vgcreate %s %s' % (lvm_vgroup_name, partition))
 
 
 def validate_database(database_type, username, password, host, port,

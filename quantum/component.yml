@@ -9,6 +9,7 @@ Services:
           - install
           - set_config_file
           - configure_ovs_plugin_vlan
+          - configure_ovs_plugin_gre
           - start
     - name: start
       description: Start the Quantum service
@@ -18,6 +19,10 @@ Services:
       description: Configures the Quantum Server to know the VLAN for OVS must be enabled
       methods:
           - configure_ovs_plugin_vlan
+    - name: configure_ovs_plugin_gre
+      description: Configures the Quantum Server to know the GRE for OVS must be enabled
+      methods:
+          - configure_ovs_plugin_gre
     - name: validate
       description: Validates cinder to operate with it
       methods:

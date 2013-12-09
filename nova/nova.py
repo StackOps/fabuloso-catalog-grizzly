@@ -110,6 +110,21 @@ def start():
     conductor_start()
     consoleauth_start()
 
+def configure_ubuntu_packages():
+    """Configure nova packages"""
+    package_ensure('python-amqp')
+    package_ensure('nova-api')
+    package_ensure('nova-cert')
+    package_ensure('nova-common')
+    package_ensure('nova-scheduler')
+    package_ensure('nova-console')
+    package_ensure('nova-conductor')
+    package_ensure('python-nova')
+    package_ensure('python-novaclient')
+    package_ensure('nova-consoleauth')
+    package_ensure('novnc')
+    package_ensure('nova-novncproxy')
+
 
 def uninstall_ubuntu_packages():
     """Uninstall nova packages"""
@@ -126,21 +141,9 @@ def uninstall_ubuntu_packages():
     package_clean('novnc')
     package_clean('nova-novncproxy')
 
-
 def install(cluster=False):
     """Generate nova configuration. Execute on both servers"""
-    package_ensure('python-amqp')
-    package_ensure('nova-api')
-    package_ensure('nova-cert')
-    package_ensure('nova-common')
-    package_ensure('nova-scheduler')
-    package_ensure('nova-console')
-    package_ensure('nova-conductor')
-    package_ensure('python-nova')
-    package_ensure('python-novaclient')
-    package_ensure('nova-consoleauth')
-    package_ensure('novnc')
-    package_ensure('nova-novncproxy')
+    configure_ubuntu_packages()
     if cluster:
         stop()
         sudo('echo "manual" >> /etc/init/nova-api.override')
@@ -167,28 +170,26 @@ def install(cluster=False):
         sudo('chmod +x /usr/lib/ocf/resource.d/openstack/nova-*')
 
 
-def sql_connect_string(host, password, port, schema, username):
+def sql_connect_string(host='127.0.0.1', password='stackops', port='3306', schema='nova', username='nova'):
     sql_connection = 'mysql://%s:%s@%s:%s/%s' % (username, password, host,
                                                  port, schema)
     return sql_connection
 
 
-def set_config_file(management_ip, user='nova', password='stackops',
-                    auth_host='127.0.0.1',
-                    auth_port='35357', auth_protocol='http',
+def set_config_file(service_user='nova', service_tenant_name='service', service_password='stackops', auth_host='127.0.0.1',
+                    auth_port='35357', auth_protocol='http', management_ip='127.0.0.1', public_ip=None,
                     mysql_username='nova', mysql_password='stackops',
-                    mysql_schema='nova', tenant='service',
-                    mysql_host='127.0.0.1',
+                    mysql_schema='nova', mysql_host='127.0.0.1',
                     mysql_port='3306'):
 
     f = '/etc/nova/api-paste.ini'
     sudo('sed -i "/volume/d" %s' % f)
     sudo("sed -i 's/admin_password.*$/admin_password = %s/g' %s"
-         % (password, f))
+         % (service_password, f))
     sudo("sed -i 's/admin_tenant_name.*$/admin_tenant_name = %s/g' %s"
-         % (tenant, f))
+         % (service_tenant_name, f))
     sudo("sed -i 's/admin_user.*$/admin_user = %s/g' %s"
-         % (user, f))
+         % (service_user, f))
     sudo("sed -i 's/auth_host.*$/auth_host = %s/g' %s"
          % (auth_host, f))
     sudo("sed -i 's/auth_port.*$/auth_port = %s/g' %s"
@@ -198,7 +199,10 @@ def set_config_file(management_ip, user='nova', password='stackops',
 
     if management_ip is None:
         puts("{error:'Management IP of the node needed as argument'}")
-        exit(0)
+        return
+
+    if public_ip is None:
+        public_ip = management_ip
 
     set_property('sql_connection', sql_connect_string(mysql_host,
                  mysql_password, mysql_port, mysql_schema, mysql_username))
@@ -272,7 +276,7 @@ def set_config_file(management_ip, user='nova', password='stackops',
     sudo('nova-manage db sync')
 
 
-def set_property(name, value, comment=None):
+def set_property(name='', value='', comment=''):
     delete_property(name)
     comm = ''
     if comment is not None:
@@ -280,12 +284,12 @@ def set_property(name, value, comment=None):
     sudo('echo "%s=%s       %s" >> %s' % (name, value, comm, CONFIG_FILE))
 
 
-def nova_properties(props):
+def nova_properties(props=None):
     for key, value in props.items():
         set_property(key, value)
 
 
-def get_property(name):
+def get_property(name=''):
     sudo('''sed '/^\#/d' %s | grep "%s"  | tail -n 1 | sed 's/^.*=//' '''
          % (name, CONFIG_FILE))
 
@@ -310,7 +314,7 @@ def get_properties():
     puts(d)
 
 
-def delete_property(name):
+def delete_property(name=None):
     sudo('sed -i "/^%s=/d" %s' % (name, CONFIG_FILE))
 
 
