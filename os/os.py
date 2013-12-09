@@ -29,9 +29,9 @@ REPOS = (
     # Setting first to highest priority
     #'deb http://repos.stackops.net/ grizzly-dev main',
     'deb http://repos.stackops.net/ grizzly main',
-    'deb http://repos.stackops.net/ grizzly-updates main',
-    'deb http://repos.stackops.net/ grizzly-security main',
-    'deb http://repos.stackops.net/ grizzly-backports main',
+#    'deb http://repos.stackops.net/ grizzly-updates main',
+#    'deb http://repos.stackops.net/ grizzly-security main',
+#    'deb http://repos.stackops.net/ grizzly-backports main',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise main universe',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise-security main universe',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main universe',
@@ -51,7 +51,7 @@ def network_stop():
         sudo("nohup service networking stop")
 
 
-def network_start():
+def network_restart():
     network_stop()
     sudo("nohup service networking start")
 
@@ -240,12 +240,12 @@ def add_glance_user():
                 shell='/bin/false')
 
 
-def configure_ntp(ntpHost="automation"):
+def configure_ntp(ntp_server="automation"):
     """Change default ntp server to client choice"""
     sudo("sed -i 's/server ntp.ubuntu.com/server %s/g' /etc/ntp.conf" %
-         ntpHost)
+         ntp_server)
     sudo("service ntp stop")
-    sudo("ntpdate -u %s" % ntpHost)
+    sudo("ntpdate -u %s" % ntp_server)
     upstart_ensure('ntp')
 
 
@@ -278,9 +278,9 @@ def add_repos(dev="false"):
     if str(dev).lower() == "false":
         for repo in REPOS:
             files.append('/etc/apt/sources.list', repo, use_sudo=True)
-    else
-    for repo in REPOS_DEV:
-        files.append('/etc/apt/sources.list', repo, use_sudo=True)
+    else:
+        for repo in REPOS_DEV:
+            files.append('/etc/apt/sources.list', repo, use_sudo=True)
 
     sudo('apt-get -y update')
 
@@ -683,39 +683,38 @@ def install():
     pass
 
 
-def config_10gnetwork(config="false"):
-    if str(config).lower() == "true":
+def config_10gnetwork(config_10GbE_network="false"):
+    if str(config_10GbE_network).lower() == "true":
         tengfile = text_strip_margin('''
         |# 10GbE Kernel Parameters
         |net.core.rmem_default=262144
         |net.core.rmem_max=16777216
         |net.core.wmem_default=262144
         |net.core.wmem_max=16777216
-        |net.ipv4.tcp_rmem="4096 262144 16777216"
-        |net.ipv4.tcp_wmem="4096 262144 16777216"
+        |net.ipv4.tcp_rmem=4096 262144 16777216
+        |net.ipv4.tcp_wmem=4096 262144 16777216
         |net.ipv4.tcp_window_scaling=1
         |net.ipv4.tcp_syncookies=0
         |net.ipv4.tcp_timestamps=0
         |net.ipv4.tcp_sack=0
         |net.ipv4.tcp_no_metrics_save=1
-        |net.ipv4.tcp_congestion_control="cubic"
+        |net.ipv4.tcp_congestion_control=cubic
         |net.core.netdev_max_backlog=250000
         |net.ipv4.tcp_mtu_probing=1
         |''')
         file_write('/etc/sysctl.d/10-10g.conf', tengfile, sudo=True)
         sudo('sysctl -p /etc/sysctl.d/10-10g.conf')
 
-
-def config_memorybuffers(config="false", dirty_bytes="20971520", dirty_background_bytes="10485760",
+def config_memorybuffers(config_memory_buffers="false", dirty_bytes="20971520", dirty_background_bytes="10485760",
                          dirty_writeback_centisecs="3000", dirty_expire_centisecs="6000", swappiness="0"):
-    if str(config).lower() == "true":
+    if str(config_memory_buffers).lower() == "true":
         memorybuffersfile = text_strip_margin('''
         |# Memory buffers parameters
         |vm.dirty_bytes = %s
         |vm.dirty_background_bytes = %s
         |vm.dirty_writeback_centisecs = %s
         |vm.dirty_expire_centisecs = %s
-        |vm.swappiness = %
+        |vm.swappiness = %s
         |''' % (dirty_bytes, dirty_background_bytes, dirty_writeback_centisecs, dirty_expire_centisecs, swappiness))
-        file_write('/etc/sysctl.d/10-dirtybytes.conf ', memorybuffersfile, sudo=True)
-        sudo('sysctl -p /etc/sysctl.d/10-dirtybytes.conf ')
+        file_write('/etc/sysctl.d/10-dirtybytes.conf', memorybuffersfile, sudo=True)
+        sudo('sysctl -p /etc/sysctl.d/10-dirtybytes.conf')

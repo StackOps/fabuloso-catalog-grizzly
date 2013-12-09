@@ -48,3 +48,7 @@ Services:
       description: Configure the ntp server to point to automation
       methods:
           - configure_ntp
+    - name: network_restart
+      description: Restart the network configuration
+      methods:
+          - network_restart

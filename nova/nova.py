@@ -279,7 +279,7 @@ def set_config_file(service_user='nova', service_tenant_name='service', service_
 def set_property(name='', value='', comment=''):
     delete_property(name)
     comm = ''
-    if comment is not None:
+    if len(comment)>0:
         comm = '# %s' % comment
     sudo('echo "%s=%s       %s" >> %s' % (name, value, comm, CONFIG_FILE))
 

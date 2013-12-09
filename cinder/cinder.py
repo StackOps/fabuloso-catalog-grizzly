@@ -137,15 +137,14 @@ def configure_lvm_storage(config_cinder_lvm="false", partition='/dev/sdb', lvm_f
         create_volume(partition, lvm_force_delete, lvm_vgroup_name)
         utils.set_option(CINDER_CONF, 'volume_driver',
                          'cinder.volume.lvm.LVMVolumeDriver')
-        utils.set_option(CINDER_CONF, 'volume_group' % lvm_vgroup_name)
+        utils.set_option(CINDER_CONF, 'volume_group' , lvm_vgroup_name)
         utils.set_option(CINDER_CONF, 'iscsi_ip_address', lvm_iscsi_ip_address)
         iscsi_start()
 
 def create_volume(partition='/dev/sdb1', lvm_force_delete="false", lvm_vgroup_name="cinder-volumes"):
     if str(lvm_force_delete).lower() == "true":
-        sudo('pvcreate -ff -y %s' % partition)
-    else:
-        sudo('pvcreate %s' % partition)
+	sudo('vgremove -f %s' % lvm_vgroup_name)
+    sudo('pvcreate -ff -y %s' % partition)
     sudo('vgcreate %s %s' % (lvm_vgroup_name, partition))
 
 
