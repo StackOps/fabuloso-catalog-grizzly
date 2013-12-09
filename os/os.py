@@ -29,9 +29,9 @@ REPOS = (
     # Setting first to highest priority
     #'deb http://repos.stackops.net/ grizzly-dev main',
     'deb http://repos.stackops.net/ grizzly main',
-    #'deb http://repos.stackops.net/ grizzly-updates main',
-    #'deb http://repos.stackops.net/ grizzly-security main',
-    #'deb http://repos.stackops.net/ grizzly-backports main',
+    'deb http://repos.stackops.net/ grizzly-updates main',
+    'deb http://repos.stackops.net/ grizzly-security main',
+    'deb http://repos.stackops.net/ grizzly-backports main',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise main universe',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise-security main universe',
     'deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main universe',
