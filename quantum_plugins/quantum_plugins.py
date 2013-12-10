@@ -178,70 +178,72 @@ def install(cluster=False, iface_ex="eth2"):
     sudo('update-rc.d quantum-plugin-openvswitch-agent defaults 98 02')
 
 
-def configure_ovs_plugin_gre(ip_tunnel='127.0.0.1', tunnel_start='1',
+def configure_ovs_plugin_gre(config_ovs_gre="true", gre_ip_tunnel='127.0.0.1', tunnel_start='1',
                              tunnel_end='1000', mysql_username='quantum',
                              mysql_password='stackops', mysql_host='127.0.0.1',
                              mysql_port='3306', mysql_schema='quantum'):
-    utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
-                     utils.sql_connect_string(mysql_host, mysql_password,
-                                              mysql_port, mysql_schema,
-                                              mysql_username),
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type', 'gre',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'tunnel_id_ranges',
-                     '%s:%s' % (tunnel_start, tunnel_end), section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'local_ip', ip_tunnel, section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'integration_bridge', 'br-int',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'tunnel_bridge', 'br-tun', section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'enable_tunneling', 'True',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
-                     'sudo /usr/bin/quantum-rootwrap '
-                     '/etc/quantum/rootwrap.conf',
-                     section='AGENT')
-    with settings(warn_only=True):
-        sudo('ovs-vsctl del-br br-int')
-    sudo('ovs-vsctl add-br br-int')
-    openvswitch_start()
-    quantum_plugin_openvswitch_agent_start()
+    if str(config_ovs_gre).lower() == "true":
+        utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
+                         utils.sql_connect_string(mysql_host, mysql_password,
+                                                  mysql_port, mysql_schema,
+                                                  mysql_username),
+                         section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
+                         section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type', 'gre',
+                         section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'tunnel_id_ranges',
+                         '%s:%s' % (tunnel_start, tunnel_end), section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'local_ip', gre_ip_tunnel, section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'integration_bridge', 'br-int',
+                         section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'tunnel_bridge', 'br-tun', section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'enable_tunneling', 'True',
+                         section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
+                         'sudo /usr/bin/quantum-rootwrap '
+                         '/etc/quantum/rootwrap.conf',
+                         section='AGENT')
+        with settings(warn_only=True):
+            sudo('ovs-vsctl del-br br-int')
+        sudo('ovs-vsctl add-br br-int')
+        openvswitch_start()
+        quantum_plugin_openvswitch_agent_start()
 
 
-def configure_ovs_plugin_vlan(iface_bridge='eth1', br_postfix='eth1',
+def configure_ovs_plugin_vlan(config_ovs_vlan="false",vlan_iface_bridge='eth1', vlan_br_postfix='eth1',
                               vlan_start='1', vlan_end='4094',
                               mysql_username='quantum',
                               mysql_password='stackops',
                               mysql_host='127.0.0.1',
                               mysql_port='3306', mysql_schema='quantum'):
-    utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
-                     utils.sql_connect_string(mysql_host,
-                                              mysql_password,
-                                              mysql_port, mysql_schema,
-                                              mysql_username),
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type',
-                     'vlan', section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'network_vlan_ranges', 'physnet1:%s:%s'
-                     % (vlan_start, vlan_end), section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'bridge_mappings',
-                     'physnet1:br-%s' % iface_bridge, section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
-                     'sudo /usr/bin/quantum-rootwrap '
-                     '/etc/quantum/rootwrap.conf', section='AGENT')
-    with settings(warn_only=True):
-        sudo('ovs-vsctl del-br br-int')
-    sudo('ovs-vsctl add-br br-int')
-    with settings(warn_only=True):
-        sudo('ovs-vsctl del-br br-%s' % br_postfix)
-    sudo('ovs-vsctl add-br br-%s' % br_postfix)
-    sudo('ovs-vsctl add-port br-%s %s' % (br_postfix, iface_bridge))
-    openvswitch_start()
-    quantum_plugin_openvswitch_agent_start()
+    if str(config_ovs_vlan).lower() == "true":
+        utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
+                         utils.sql_connect_string(mysql_host,
+                                                  mysql_password,
+                                                  mysql_port, mysql_schema,
+                                                  mysql_username),
+                         section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
+                         section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type',
+                         'vlan', section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'network_vlan_ranges', 'physnet1:%s:%s'
+                         % (vlan_start, vlan_end), section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'bridge_mappings',
+                         'physnet1:br-%s' % vlan_iface_bridge, section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
+                         'sudo /usr/bin/quantum-rootwrap '
+                         '/etc/quantum/rootwrap.conf', section='AGENT')
+        with settings(warn_only=True):
+            sudo('ovs-vsctl del-br br-int')
+        sudo('ovs-vsctl add-br br-int')
+        with settings(warn_only=True):
+            sudo('ovs-vsctl del-br br-%s' % vlan_br_postfix)
+        sudo('ovs-vsctl add-br br-%s' % vlan_br_postfix)
+        sudo('ovs-vsctl add-port br-%s %s' % (vlan_br_postfix, vlan_iface_bridge))
+        openvswitch_start()
+        quantum_plugin_openvswitch_agent_start()
 
 
 def configure_lbaas_agent():
@@ -257,35 +259,35 @@ def configure_lbaas_agent():
 
 
 
-def configure_metadata_agent(user='quantum', password='stackops',
+def configure_metadata_agent(service_user='quantum', service_pass='stackops',
                              auth_host='127.0.0.1',
                              region='RegionOne', metadata_ip='127.0.0.1',
-                             tenant='service'):
+                             service_tenant_name='service'):
     auth_url = 'http://' + auth_host + ':35357/v2.0'
     utils.set_option(QUANTUM_METADATA_CONF, 'auth_url', auth_url)
     utils.set_option(QUANTUM_METADATA_CONF, 'auth_region', region)
-    utils.set_option(QUANTUM_METADATA_CONF, 'admin_tenant_name', tenant)
-    utils.set_option(QUANTUM_METADATA_CONF, 'admin_user', user)
-    utils.set_option(QUANTUM_METADATA_CONF, 'admin_password', password)
+    utils.set_option(QUANTUM_METADATA_CONF, 'admin_tenant_name', service_tenant_name)
+    utils.set_option(QUANTUM_METADATA_CONF, 'admin_user', service_user)
+    utils.set_option(QUANTUM_METADATA_CONF, 'admin_password', service_pass)
     utils.set_option(QUANTUM_METADATA_CONF, 'nova_metadata_ip', metadata_ip)
     utils.set_option(QUANTUM_METADATA_CONF, 'nova_metadata_port', '8775')
     utils.set_option(QUANTUM_METADATA_CONF,
                      'quantum_metadata_proxy_shared_secret', 'password')
 
 
-def configure_l3_agent(user='quantum', password='stackops',
-                       auth_host='127.0.0.1',
-                       region='RegionOne', metadata_ip='127.0.0.1',
-                       tenant='service'):
+def configure_l3_agent(service_user='quantum', service_pass='stackops',
+                        auth_host='127.0.0.1',
+                        region='RegionOne', metadata_ip='127.0.0.1',
+                        service_tenant_name='service'):
     utils.set_option(L3_AGENT_CONF, 'debug', 'True')
     utils.set_option(L3_AGENT_CONF, 'interface_driver',
                      'quantum.agent.linux.interface.OVSInterfaceDriver')
     auth_url = 'http://' + auth_host + ':35357/v2.0'
     utils.set_option(L3_AGENT_CONF, 'auth_url', auth_url)
     utils.set_option(L3_AGENT_CONF, 'auth_region', region)
-    utils.set_option(L3_AGENT_CONF, 'admin_tenant_name', tenant)
-    utils.set_option(L3_AGENT_CONF, 'admin_user', user)
-    utils.set_option(L3_AGENT_CONF, 'admin_password', password)
+    utils.set_option(L3_AGENT_CONF, 'admin_tenant_name', service_tenant_name)
+    utils.set_option(L3_AGENT_CONF, 'admin_user', service_user)
+    utils.set_option(L3_AGENT_CONF, 'admin_password', service_pass)
     utils.set_option(L3_AGENT_CONF, 'root_helper',
                      'sudo quantum-rootwrap /etc/quantum/rootwrap.conf')
     utils.set_option(L3_AGENT_CONF, 'metadata_ip', metadata_ip)
@@ -301,16 +303,16 @@ def configure_dhcp_agent(name_server='8.8.8.8'):
                      'quantum.agent.linux.interface.OVSInterfaceDriver')
 
 
-def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
-                    auth_port='35357', auth_protocol='http', tenant='service',
+def set_config_file(service_user='quantum', service_pass='stackops', auth_host='127.0.0.1',
+                    auth_port='35357', auth_protocol='http', service_tenant_name='service',
                     rabbit_password='guest', rabbit_host='127.0.0.1'):
 
     utils.set_option(QUANTUM_API_PASTE_CONF, 'admin_tenant_name',
-                     tenant, section='filter:authtoken')
+                     service_tenant_name, section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'admin_user',
-                     user, section='filter:authtoken')
+                     service_user, section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'admin_password',
-                     password, section='filter:authtoken')
+                     service_pass, section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'auth_host', auth_host,
                      section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'auth_port', auth_port,
@@ -330,11 +332,11 @@ def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
                      'notifications,monitor')
     utils.set_option(QUANTUM_CONF, 'default_notification_level', 'INFO')
     utils.set_option(QUANTUM_CONF, 'admin_tenant_name',
-                     tenant, section='keystone_authtoken')
+                     service_tenant_name, section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'admin_user',
-                     user, section='keystone_authtoken')
+                     service_user, section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'admin_password',
-                     password, section='keystone_authtoken')
+                     service_pass, section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'auth_host', auth_host,
                      section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'auth_port', auth_port,
@@ -475,7 +477,7 @@ def configure_metadata(private_cidr='10.0.0.0/16', quantum_host='127.0.0.1'):
     sudo('route add -net %s gw %s' % (private_cidr, quantum_host))
 
 
-def configure_iptables(public_ip):
+def configure_iptables(public_ip='127.127.0.1'):
     package_ensure('iptables-persistent')
     sudo('service iptables-persistent flush')
     iptables_conf = text_strip_margin('''

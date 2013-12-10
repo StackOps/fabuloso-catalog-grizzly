@@ -124,7 +124,7 @@ def configure_ovs_plugin_vlan(config_ovs_vlan="false", vlan_start='1', vlan_end=
                          '/etc/quantum/rootwrap.conf',
                          section='AGENT')
 
-def configure_ovs_plugin_gre(config_ovs_gre="false", mysql_username='quantum',tunnel_start='1',tunnel_end='1000',
+def configure_ovs_plugin_gre(config_ovs_gre="true", mysql_username='quantum',tunnel_start='1',tunnel_end='1000',
                              mysql_password='stackops', mysql_host='127.0.0.1', mysql_port='3306', mysql_schema='quantum'):
     if str(config_ovs_gre).lower() == "true":
         utils.set_option(OVS_PLUGIN_CONF,'sql_connection',utils.sql_connect_string(mysql_host, mysql_password, mysql_port, mysql_schema, mysql_username),section='DATABASE')
