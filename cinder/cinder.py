@@ -144,9 +144,9 @@ def configure_lvm_storage(config_cinder_lvm="false", partition='/dev/sdb', lvm_f
 
 def create_volume(partition='/dev/sdb1', lvm_force_delete="false", lvm_vgroup_name="cinder-volumes"):
     if str(lvm_force_delete).lower() == "true":
-	sudo('vgremove -f %s' % lvm_vgroup_name)
-    sudo('pvcreate -ff -y %s' % partition)
-    sudo('vgcreate %s %s' % (lvm_vgroup_name, partition))
+        sudo('vgremove -f %s' % lvm_vgroup_name)
+        sudo('pvcreate -ff -y %s' % partition)
+        sudo('vgcreate %s %s' % (lvm_vgroup_name, partition))
 
 
 def validate_database(database_type, username, password, host, port,
