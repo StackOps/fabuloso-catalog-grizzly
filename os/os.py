@@ -46,14 +46,9 @@ REPOS_DEV = (
     'deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/grizzly main')
 
 
-def network_stop():
-    with settings(warn_only=True):
-        sudo("nohup service networking stop")
-
-
-def network_restart():
-    network_stop()
-    sudo("nohup service networking start")
+def network_restart(restart_network="true"):
+    if str(restart_network).lower() == "true":
+        sudo("ifdown --exclude=lo -a && ifup --exclude=lo -a")
 
 
 def _configureBondFile(bond_name, bond_slaves, bond_options):
