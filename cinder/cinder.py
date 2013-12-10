@@ -137,7 +137,7 @@ def configure_lvm_storage(config_cinder_lvm="false", partition='/dev/sdb', lvm_f
         sudo("echo 'include /etc/tgt/conf.d/cinder.conf' > /etc/tgt/targets.conf")
         create_volume(partition, lvm_force_delete, lvm_vgroup_name)
         utils.set_option(CINDER_CONF, 'volume_driver',
-                         'cinder.volume.lvm.LVMVolumeDriver')
+                         'cinder.volume.drivers.lvm.LVMISCSIDriver')
         utils.set_option(CINDER_CONF, 'volume_group' , lvm_vgroup_name)
         utils.set_option(CINDER_CONF, 'iscsi_ip_address', lvm_iscsi_ip_address)
         iscsi_start()
