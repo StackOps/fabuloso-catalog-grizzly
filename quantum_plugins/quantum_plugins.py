@@ -424,7 +424,7 @@ def add_route_to_quantum_host(private_range, quantum_host):
     sudo('route add -net %s gw %s' % (private_range, quantum_host))
 
 
-def configure_default_private_network(private_range="10.0.0.0/16",
+def configure_default_private_network(private_range="10.0.0.0/24",
                                       private_gw="10.0.0.1",
                                       admin_user='admin',
                                       admin_tenant_name='admin',
