@@ -155,6 +155,8 @@ def uninstall_ubuntu_packages():
 def install():
     """Generate compute configuration. Execute on both servers"""
     configure_ubuntu_packages()
+    configure_forwarding()
+    openvswitch_start()
     sudo('update-rc.d quantum-plugin-openvswitch-agent defaults 98 02')
     sudo('update-rc.d nova-compute defaults 98 02')
 
@@ -173,8 +175,6 @@ def configure_network(config_ovs_vlan="false", iface_bridge='eth1', br_postfix='
                       network_restart=False):
 
     if str(config_ovs_vlan).lower() == "true":
-        openvswitch_start()
-        configure_forwarding()
         with settings(warn_only=True):
             sudo('ovs-vsctl del-br br-%s' % br_postfix)
         sudo('ovs-vsctl add-br br-%s' % br_postfix)
