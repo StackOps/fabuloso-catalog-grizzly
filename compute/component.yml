@@ -10,25 +10,58 @@ Services:
           - configure_forwarding
           - configure_ntp
           - configure_vhost_net
-          - configure_libvirt
           - configure_network
-          - set_config_file
+          - configure_libvirt
           - configure_quantum
           - configure_ovs_plugin_vlan
+          - configure_ovs_plugin_gre
+          - configure_nova_compute
+          - configure_local_storage
+          - configure_nfs_storage
+          - configure_lvm_storage
           - start
     - name: configure_ovs_plugin_vlan
-      description: Configure the openvswitch
+      description: Configure the openvswitch for VLANs
       methods:
           - configure_ovs_plugin_vlan
+    - name: configure_ovs_plugin_gre
+      description: Configure the openvswitch for GRE
+      methods:
+          - configure_ovs_plugin_gre
     - name: configure_nfs_storage
-      description: Configure nova-compute for NFS storage
+      description: Configure nova-compute for NFS backend
       methods:
           - configure_nfs_storage
+    - name: configure_lvm_storage
+      description: Configure nova-compute for LVM backend
+      methods:
+          - configure_lvm_storage
+    - name: configure_local_storage
+      description: Configure nova-compute for Local backend
+      methods:
+          - configure_local_storage
     - name: configure_network
       description: Configure network
       methods:
           - configure_network
     - name: start
-      description: Start Nova-compute service
+      description: Start all Nova-compute service
       methods: 
           - start
+    - name: stop
+      description: Stop all Nova-compute service
+      methods:
+          - stop
+    - name: libvirt_start
+      description: Start Libvirt service
+      methods:
+          - libvirt_start
+    - name: libvirt_stop
+      description: Stop Libvirt service
+      methods:
+          - libvirt_stop
+    - name: set_option
+      description: Set the nova-compute.conf value
+      methods:
+          - set_option
+

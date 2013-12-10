@@ -40,6 +40,8 @@ OVS_PLUGIN_CONF = '/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini'
 
 QUANTUM_CONF = '/etc/quantum/quantum.conf'
 
+NOVA_PATH = '/var/lib/nova'
+
 NOVA_INSTANCES = '/var/lib/nova/instances'
 
 NOVA_VOLUMES = '/var/lib/nova/volumes'
@@ -47,7 +49,6 @@ NOVA_VOLUMES = '/var/lib/nova/volumes'
 
 def stop():
     with settings(warn_only=True):
-        openvswitch_stop()
         quantum_plugin_openvswitch_agent_stop()
         ntp_stop()
         compute_stop()
@@ -58,7 +59,6 @@ def start():
     stop()
     ntp_start()
     iscsi_initiator_start()
-    openvswitch_start()
     quantum_plugin_openvswitch_agent_start()
     compute_start()
 
@@ -103,16 +103,24 @@ def iscsi_initiator_start():
     sudo("nohup service open-iscsi start")
 
 
-def compute_stop():
+def libvirt_stop():
     with settings(warn_only=True):
         sudo("nohup service libvirt-bin stop")
+
+
+def libvirt_start():
+    libvirt_stop()
+    sudo("nohup service libvirt-bin start")
+
+def compute_stop():
+    libvirt_stop()
     with settings(warn_only=True):
         sudo("nohup service nova-compute stop")
 
 
 def compute_start():
     compute_stop()
-    sudo("nohup service libvirt-bin start")
+    libvirt_start()
     sudo("nohup service nova-compute start")
 
 
@@ -144,11 +152,9 @@ def uninstall_ubuntu_packages():
     package_clean('autofs')
 
 
-def install(cluster=False):
+def install():
     """Generate compute configuration. Execute on both servers"""
     configure_ubuntu_packages()
-    if cluster:
-        stop()
     sudo('update-rc.d quantum-plugin-openvswitch-agent defaults 98 02')
     sudo('update-rc.d nova-compute defaults 98 02')
 
@@ -159,36 +165,35 @@ def configure_forwarding():
     sudo("echo 1 > /proc/sys/net/ipv4/ip_forward")
 
 
-def configure_network(iface_bridge='eth1', br_postfix='bond-vm',
+def configure_network(config_ovs_vlan="false", iface_bridge='eth1', br_postfix='bond-vm',
                       bridge_name=None,
                       bond_parameters='bond_mode=balance-slb '
                                       'other_config:bond-detect-mode=miimon '
                                       'other_config:bond-miimon-interval=100',
                       network_restart=False):
 
-    openvswitch_start()
-    configure_forwarding()
-    with settings(warn_only=True):
-        sudo('ovs-vsctl del-br br-%s' % br_postfix)
-    sudo('ovs-vsctl add-br br-%s' % br_postfix)
-    bonding = len(iface_bridge.split()) > 1
-    if bonding:
-        if bridge_name is not None:
-            sudo('ovs-vsctl add-port br-%s %s -- set interface %s '
-                 'type=internal' % (br_postfix, bridge_name, bridge_name))
-        if network_restart:
-            sudo('ovs-vsctl add-bond br-%s %s %s %s; reboot' %
-                 (br_postfix, br_postfix, iface_bridge, bond_parameters))
+    if str(config_ovs_vlan).lower() == "true":
+        openvswitch_start()
+        configure_forwarding()
+        with settings(warn_only=True):
+            sudo('ovs-vsctl del-br br-%s' % br_postfix)
+        sudo('ovs-vsctl add-br br-%s' % br_postfix)
+        bonding = len(iface_bridge.split()) > 1
+        if bonding:
+            if bridge_name is not None:
+                sudo('ovs-vsctl add-port br-%s %s -- set interface %s '
+                     'type=internal' % (br_postfix, bridge_name, bridge_name))
+            if network_restart:
+                sudo('ovs-vsctl add-bond br-%s %s %s %s; reboot' %
+                     (br_postfix, br_postfix, iface_bridge, bond_parameters))
+            else:
+                sudo('ovs-vsctl add-bond br-%s %s %s %s' %
+                     (br_postfix, br_postfix, iface_bridge, bond_parameters))
         else:
-            sudo('ovs-vsctl add-bond br-%s %s %s %s' %
-                 (br_postfix, br_postfix, iface_bridge, bond_parameters))
-    else:
-        sudo('ovs-vsctl add-port br-%s %s' % (br_postfix, iface_bridge))
+            sudo('ovs-vsctl add-port br-%s %s' % (br_postfix, iface_bridge))
 
-
-def configure_ntp(ntp_host='ntp.ubuntu.com'):
+def configure_ntp(ntp_host='automation'):
     sudo('echo "server %s" > /etc/ntp.conf' % ntp_host)
-
 
 def configure_vhost_net():
     sudo('modprobe vhost-net')
@@ -197,9 +202,7 @@ def configure_vhost_net():
     sudo("echo 'modprobe vhost-net' >> /etc/rc.local")
     sudo("echo 'exit 0' >> /etc/rc.local")
 
-
-def configure_libvirt(hostname, shared_storage=False,
-                      instances_path='/var/lib/nova/instances'):
+def configure_libvirt():
     utils.uncomment_property(LIBVIRT_QEMU_CONF, 'cgroup_device_acl')
     utils.modify_property(LIBVIRT_QEMU_CONF,
                           'cgroup_device_acl',
@@ -218,47 +221,31 @@ def configure_libvirt(hostname, shared_storage=False,
     with settings(warn_only=True):
         sudo('virsh net-destroy default')
         sudo('virsh net-undefine default')
+    libvirt_start()
 
-    compute_stop()
-    # share libvirt configuration to restore compute nodes
-    if shared_storage:
-        path = '%s/libvirt/%s' % (instances_path, hostname)
-        if not dir_exists(path):
-            sudo('mkdir -p %s' % path)
-            sudo('cp -fR /etc/libvirt/* %s/' % path)
-        dir_remove('/etc/libvirt')
-        sudo('ln -s %s /etc/libvirt' % path)
-    compute_start()
+def configure_nova_compute(controller_host=None, public_ip=None, rabbit_password='guest', mysql_username='nova',
+                    mysql_password='stackops', mysql_port='3306', mysql_schema='nova',
+                    service_user='nova', service_tenant_name='service', service_pass='stackops',
+                    auth_port='35357', auth_protocol='http', libvirt_type='kvm', vncproxy_port='6080',
+                    glance_port='9292',rescue_image_id=''):
+    if controller_host is None:
+        puts("{error:'Controller IP of the node needed as argument'}")
+        return
 
+    quantum_url = 'http://%s:9696' % controller_host
+    admin_auth_url = 'http://%s:35357/v2.0' % controller_host
+    auth_host = controller_host
+    mysql_host = controller_host
+    vncproxy_host = public_ip
+    glance_host = controller_host
+    rabbit_host = controller_host
 
-def set_config_file(management_ip='127.0.0.1', user='nova',
-                    password='stackops',
-                    auth_host='127.0.0.1', auth_port='35357',
-                    auth_protocol='http', quantum_host='127.0.0.1',
-                    libvirt_type='kvm', rabbit_host='127.0.0.1',
-                    vncproxy_host='127.0.0.1', glance_host='127.0.0.1',
-                    glance_port='9292', mysql_username='nova',
-                    mysql_password='stackops', mysql_schema='nova',
-                    mysql_host='127.0.0.1', tenant='service',
-                    mysql_port='3306', rabbit_password='guest',
-                    vncproxy_port='6080'):
-
-    if management_ip is None:
-        puts("{error:'Management IP of the node needed as argument'}")
-        exit(0)
-
-    utils.set_option(COMPUTE_API_PASTE_CONF, 'admin_tenant_name',
-                     tenant, section='filter:authtoken')
-    utils.set_option(COMPUTE_API_PASTE_CONF, 'admin_user',
-                     user, section='filter:authtoken')
-    utils.set_option(COMPUTE_API_PASTE_CONF, 'admin_password',
-                     password, section='filter:authtoken')
-    utils.set_option(COMPUTE_API_PASTE_CONF, 'auth_host', auth_host,
-                     section='filter:authtoken')
-    utils.set_option(COMPUTE_API_PASTE_CONF, 'auth_port', auth_port,
-                     section='filter:authtoken')
-    utils.set_option(COMPUTE_API_PASTE_CONF, 'auth_protocol',
-                     auth_protocol, section='filter:authtoken')
+    utils.set_option(COMPUTE_API_PASTE_CONF, 'admin_tenant_name', service_tenant_name, section='filter:authtoken')
+    utils.set_option(COMPUTE_API_PASTE_CONF, 'admin_user', service_user, section='filter:authtoken')
+    utils.set_option(COMPUTE_API_PASTE_CONF, 'admin_password', service_pass, section='filter:authtoken')
+    utils.set_option(COMPUTE_API_PASTE_CONF, 'auth_host', auth_host, section='filter:authtoken')
+    utils.set_option(COMPUTE_API_PASTE_CONF, 'auth_port', auth_port, section='filter:authtoken')
+    utils.set_option(COMPUTE_API_PASTE_CONF, 'auth_protocol', auth_protocol, section='filter:authtoken')
 
     utils.set_option(NOVA_COMPUTE_CONF, 'sql_connection',
                      utils.sql_connect_string(mysql_host, mysql_password,
@@ -278,13 +265,11 @@ def set_config_file(management_ip='127.0.0.1', user='nova',
     utils.set_option(NOVA_COMPUTE_CONF, 'lock_path', '/var/lock/nova')
     utils.set_option(NOVA_COMPUTE_CONF, 'root_helper',
                      'sudo nova-rootwrap /etc/nova/rootwrap.conf')
-    utils.set_option(NOVA_COMPUTE_CONF, 'verbose', 'true')
     utils.set_option(NOVA_COMPUTE_CONF, 'notification_driver',
                      'nova.openstack.common.notifier.rabbit_notifier')
     utils.set_option(NOVA_COMPUTE_CONF, 'notification_topics',
                      'notifications,monitor')
     utils.set_option(NOVA_COMPUTE_CONF, 'default_notification_level', 'INFO')
-    utils.set_option(NOVA_COMPUTE_CONF, 'my_ip', management_ip)
 
     utils.set_option(NOVA_COMPUTE_CONF, 'connection_type', 'libvirt')
     utils.set_option(NOVA_COMPUTE_CONF, 'libvirt_type', libvirt_type)
@@ -302,10 +287,8 @@ def set_config_file(management_ip='127.0.0.1', user='nova',
                      'stackops')
     utils.set_option(NOVA_COMPUTE_CONF, 'quantum_admin_tenant_name',
                      'service')
-    admin_auth_url = 'http://' + auth_host + ':35357/v2.0'
     utils.set_option(NOVA_COMPUTE_CONF, 'quantum_admin_auth_url',
                      admin_auth_url)
-    quantum_url = 'http://' + quantum_host + ':9696'
     utils.set_option(NOVA_COMPUTE_CONF, 'quantum_url',
                      quantum_url)
 
@@ -314,8 +297,7 @@ def set_config_file(management_ip='127.0.0.1', user='nova',
                      % (vncproxy_host, vncproxy_port))
     utils.set_option(NOVA_COMPUTE_CONF, 'vncserver_listen', '0.0.0.0')
     utils.set_option(NOVA_COMPUTE_CONF, 'vnc_enable', 'true')
-    utils.set_option(NOVA_COMPUTE_CONF, 'vncserver_proxyclient_address',
-                     management_ip)
+    utils.set_option(NOVA_COMPUTE_CONF, 'vncserver_proxyclient_address', "$my_ip")
 
     utils.set_option(NOVA_COMPUTE_CONF, 'compute_driver',
                      'libvirt.LibvirtDriver')
@@ -337,8 +319,6 @@ def set_config_file(management_ip='127.0.0.1', user='nova',
     utils.set_option(NOVA_COMPUTE_CONF, 'cinder_catalog_info',
                      'volume:cinder:internalURL')
 
-    utils.set_option(NOVA_COMPUTE_CONF, 'allow_same_net_traffic',
-                     'True')
     # TOTHINK if its necessary
     utils.set_option(NOVA_COMPUTE_CONF, 'service_quantum_metadata_proxy',
                      'True')
@@ -346,6 +326,8 @@ def set_config_file(management_ip='127.0.0.1', user='nova',
                      'password')
 
     utils.set_option(NOVA_COMPUTE_CONF, 'nfs_mount_point_base', NOVA_VOLUMES)
+
+    utils.set_option(NOVA_COMPUTE_CONF, 'rescue_image_id', rescue_image_id)
 
     start()
 
@@ -365,142 +347,108 @@ def configure_quantum(rabbit_password='guest', rabbit_host='127.0.0.1'):
     utils.set_option(QUANTUM_CONF, 'default_notification_level', 'INFO')
     quantum_plugin_openvswitch_agent_start()
 
+def configure_ovs_plugin_gre(config_ovs_gre="true", mysql_host=None, tunnel_ip=None, mysql_quantum_username='quantum', tunnel_start='1',tunnel_end='1000',
+                         mysql_quantum_password='stackops', mysql_port='3306', mysql_quantum_schema='quantum'):
+    if str(config_ovs_gre).lower() == "true":
+        utils.set_option(OVS_PLUGIN_CONF,'sql_connection',utils.sql_connect_string(mysql_host, mysql_quantum_password, mysql_port, mysql_quantum_schema, mysql_quantum_username),section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF,'reconnect_interval','2',section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF,'tenant_network_type','gre',section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'tunnel_id_ranges','%s:%s' % (tunnel_start,tunnel_end),section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'local_ip', tunnel_ip, section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'integration_bridge','br-int',section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'tunnel_bridge','br-tun',section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'enable_tunneling','True',section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF,'root_helper','sudo /usr/bin/quantum-rootwrap /etc/quantum/rootwrap.conf',section='AGENT')
+        with settings(warn_only=True):
+            sudo('ovs-vsctl del-br br-int')
+        sudo('ovs-vsctl add-br br-int')
+        quantum_plugin_openvswitch_agent_start()
 
-def configure_ovs_plugin_gre(mysql_username='quantum',
-                             mysql_password='stackops',
-                             mysql_host='127.0.0.1', mysql_port='3306',
-                             mysql_schema='quantum'):
-    utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
-                     utils.sql_connect_string(mysql_host, mysql_password,
-                                              mysql_port, mysql_schema,
-                                              mysql_username),
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type', 'gre',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'tunnel_id_ranges', '1:1000',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'integration_bridge', 'br-int',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'tunnel_bridge', 'br-tun',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'enable_tunneling', 'True',
-                     section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
-                     'sudo /usr/bin/quantum-rootwrap '
-                     '/etc/quantum/rootwrap.conf', section='AGENT')
-    with settings(warn_only=True):
-        sudo('ovs-vsctl del-br br-int')
-    sudo('ovs-vsctl add-br br-int')
-    openvswitch_start()
-    quantum_plugin_openvswitch_agent_start()
-
-
-def configure_ovs_plugin_vlan(br_postfix='bond-vm',
+def configure_ovs_plugin_vlan(config_ovs_vlan="false",
+                              br_postfix='bond-vm',
                               vlan_start='2',
                               vlan_end='4094',
                               mysql_quantum_username='quantum',
                               mysql_quantum_password='stackops',
                               mysql_host='127.0.0.1',
-                              mysql_port='3306', mysql_schema='quantum'):
-    utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
-                     utils.sql_connect_string(mysql_host,
-                                              mysql_quantum_password,
-                                              mysql_port, mysql_schema,
-                                              mysql_quantum_username),
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
-                     section='DATABASE')
-    utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type',
-                     'vlan', section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'network_vlan_ranges', 'physnet1:%s:%s'
-                     % (vlan_start, vlan_end), section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'bridge_mappings',
-                     'physnet1:br-%s' % br_postfix, section='OVS')
-    utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
-                     'sudo /usr/bin/quantum-rootwrap '
-                     '/etc/quantum/rootwrap.conf', section='AGENT')
-    with settings(warn_only=True):
-        sudo('ovs-vsctl del-br br-int')
-    sudo('ovs-vsctl add-br br-int')
-    quantum_plugin_openvswitch_agent_start()
+                              mysql_port='3306', mysql_quantum_schema='quantum'):
+    if str(config_ovs_vlan).lower() == "true":
+        utils.set_option(OVS_PLUGIN_CONF, 'sql_connection',
+                         utils.sql_connect_string(mysql_host,
+                                                  mysql_quantum_password,
+                                                  mysql_port, mysql_quantum_schema,
+                                                  mysql_quantum_username),
+                         section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF, 'reconnect_interval', '2',
+                         section='DATABASE')
+        utils.set_option(OVS_PLUGIN_CONF, 'tenant_network_type',
+                         'vlan', section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'network_vlan_ranges', 'physnet1:%s:%s'
+                         % (vlan_start, vlan_end), section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'bridge_mappings',
+                         'physnet1:br-%s' % br_postfix, section='OVS')
+        utils.set_option(OVS_PLUGIN_CONF, 'root_helper',
+                         'sudo /usr/bin/quantum-rootwrap '
+                         '/etc/quantum/rootwrap.conf', section='AGENT')
+        with settings(warn_only=True):
+            sudo('ovs-vsctl del-br br-int')
+        sudo('ovs-vsctl add-br br-int')
+        quantum_plugin_openvswitch_agent_start()
 
-
-def get_memory_available():
-    return 1024 * int(sudo("cat /proc/meminfo | grep 'MemTotal' | "
-                           "sed 's/[^0-9\.]//g'"))
-
-
-def configure_hugepages(is_hugepages_enabled=True, percentage='70'):
-    ''' enable/disable huge pages in the system'''
-    sudo("sed -i '/hugepages/d' /etc/apparmor.d/abstractions/libvirt-qemu")
-    sudo('sed -i /hugetlbfs/d /etc/fstab')
-    sudo("sed -i '/hugepages/d' "
-         "/usr/share/pyshared/nova/virt/libvirt.xml.template")
-    with settings(warn_only=True):
-        sudo('rm etc/sysctl.d/60-hugepages.conf')
-        sudo('umount /dev/hugepages')
-    if is_hugepages_enabled:
-        pages = int(0.01 * int(percentage) *
-                    int(get_memory_available() / PAGE_SIZE)) + BONUS_PAGES
-        sudo("echo '  owner /dev/hugepages/libvirt/qemu/* rw,' >> "
-             "/etc/apparmor.d/abstractions/libvirt-qemu")
-        sudo('mkdir /dev/hugepages')
-        sudo('echo "hugetlbfs       /dev/hugepages  hugetlbfs     '
-             'defaults        0 0\n" >> /etc/fstab')
-        sudo('mount -t hugetlbfs hugetlbfs /dev/hugepages')
-        sudo('echo "vm.nr_hugepages = %s" > /etc/sysctl.d/60-hugepages.conf'
-             % pages)
-        sudo('sysctl vm.nr_hugepages=%s' % pages)
-        sudo("sysctl -p /etc/sysctl.conf")
-
-        # modify libvirt template to enable hugepages
-        sudo("sed -i 's#</domain>#\\t<memoryBacking><hugepages/>"
-             "</memoryBacking>\\n</domain>#g' "
-             "/usr/share/pyshared/nova/virt/libvirt.xml.template")
-
-
-def configure_nfs_storage(nfs_server, delete_content=False,
+def configure_nfs_storage(config_nfs_storage="false",
+                          nfs_mountpoint="localhost:/mnt",
+                          delete_content=False,
                           set_nova_owner=True,
                           nfs_server_mount_point_params='defaults'):
-    package_ensure('nfs-common')
-    package_ensure('autofs')
-    if delete_content:
-        sudo('rm -fr %s' % NOVA_INSTANCES)
-        sudo('rm -fr %s' % NOVA_VOLUMES)
-    stop()
-    nova_instance_exists = file_exists(NOVA_INSTANCES)
-    nova_volumes_exists = file_exists(NOVA_VOLUMES)
-    if not nova_instance_exists:
+    if str(config_nfs_storage).lower() == "true":
+        package_ensure('nfs-common')
+        package_ensure('autofs')
+        utils.set_option(NOVA_COMPUTE_CONF, 'libvirt_images_type', 'default')
+        if delete_content:
+            sudo('rm -fr %s' % NOVA_INSTANCES)
+            sudo('rm -fr %s' % NOVA_VOLUMES)
+        stop()
+        nova_instance_exists = file_exists(NOVA_INSTANCES)
+        nova_volumes_exists = file_exists(NOVA_VOLUMES)
+        if not nova_instance_exists:
+            sudo('mkdir -p %s' % NOVA_INSTANCES)
+        if not nova_volumes_exists:
+            sudo('mkdir -p %s' % NOVA_VOLUMES)
+        mpoint = '%s  -fstype=nfs,vers=3,%s   %s' % \
+                 (NOVA_INSTANCES, nfs_server_mount_point_params, nfs_mountpoint)
+        sudo('''echo "/-    /etc/auto.nfs" > /etc/auto.master''')
+        sudo('''echo "%s" > /etc/auto.nfs''' % mpoint)
+        sudo('service autofs restart')
+        with settings(warn_only=True):
+            if set_nova_owner:
+                if not nova_instance_exists:
+                    sudo('chown nova:nova -R %s' % NOVA_INSTANCES)
+                if not nova_volumes_exists:
+                    sudo('chown nova:nova -R %s' % NOVA_VOLUMES)
+        start()
+
+def configure_local_storage(config_local_storage="true", delete_content=False, set_nova_owner=True):
+    if str(config_local_storage).lower() == "true":
+        utils.set_option(NOVA_COMPUTE_CONF, 'libvirt_images_type', 'default')
+        if delete_content:
+            sudo('rm -fr %s' % NOVA_INSTANCES)
+        stop()
+        sudo('sed -i "#%s#d" /etc/fstab' % NOVA_INSTANCES)
         sudo('mkdir -p %s' % NOVA_INSTANCES)
-    if not nova_volumes_exists:
-        sudo('mkdir -p %s' % NOVA_VOLUMES)
-#    mpoint = '%s %s nfs _netdev,nobootwait,bg,vers=3,
-# %s 0 0' % (endpoint, NOVA_INSTANCES, endpoint_params)
-    mpoint = '%s  -fstype=nfs,vers=3,%s   %s' % \
-             (NOVA_INSTANCES, nfs_server_mount_point_params, nfs_server)
-    sudo('''echo "/-    /etc/auto.nfs" > /etc/auto.master''')
-    sudo('''echo "%s" > /etc/auto.nfs''' % mpoint)
-#    sudo('sed -i "#%s#d" /etc/fstab' % NOVA_INSTANCES)
-#    sudo('echo "\n%s" >> /etc/fstab' % mpoint)
-#    sudo('mount -a')
-    sudo('service autofs restart')
-    with settings(warn_only=True):
         if set_nova_owner:
-            if not nova_instance_exists:
-                sudo('chown nova:nova -R %s' % NOVA_INSTANCES)
-            if not nova_volumes_exists:
-                sudo('chown nova:nova -R %s' % NOVA_VOLUMES)
-    start()
+            sudo('chown nova:nova -R %s' % NOVA_INSTANCES)
+        start()
 
+def configure_lvm_storage(config_lvm_storage="false", lvm_vgroup_name='nova-volume',lvm_sparse='true', lvm_partition='/dev/sdb', lvm_force_delete="false"):
+    if str(config_lvm_storage).lower() == "true":
+        if str(lvm_force_delete).lower() == "true":
+            sudo('vgremove -f %s' % lvm_vgroup_name)
+            sudo('pvcreate -ff -y %s' % lvm_partition)
+            sudo('vgcreate %s %s' % (lvm_vgroup_name, lvm_partition))
+        utils.set_option(NOVA_COMPUTE_CONF, 'libvirt_images_type', 'lvm')
+        utils.set_option(NOVA_COMPUTE_CONF, 'libvirt_images_volume_group', lvm_vgroup_name)
+        utils.set_option(NOVA_COMPUTE_CONF, 'libvirt_sparse_logical_volumes', lvm_sparse)
+        start()
 
-def configure_local_storage(delete_content=False, set_nova_owner=True):
-    if delete_content:
-        sudo('rm -fr %s' % NOVA_INSTANCES)
-    stop()
-    sudo('sed -i "#%s#d" /etc/fstab' % NOVA_INSTANCES)
-    sudo('mkdir -p %s' % NOVA_INSTANCES)
-    if set_nova_owner:
-        sudo('chown nova:nova -R %s' % NOVA_INSTANCES)
-    start()
+def set_option(property='',value=''):
+    utils.set_option(NOVA_COMPUTE_CONF, property, value)
