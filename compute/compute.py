@@ -227,7 +227,7 @@ def configure_libvirt():
         sudo('virsh net-undefine default')
     libvirt_start()
 
-def configure_nova_compute(controller_host=None, public_ip=None, rabbit_password='guest', mysql_username='nova',
+def configure_nova_compute(controller_host=None, public_ip=None, compute_ip=None, rabbit_password='guest', mysql_username='nova',
                     mysql_password='stackops', mysql_port='3306', mysql_schema='nova',
                     service_user='nova', service_tenant_name='service', service_pass='stackops',
                     auth_port='35357', auth_protocol='http', libvirt_type='kvm', vncproxy_port='6080',
@@ -301,7 +301,7 @@ def configure_nova_compute(controller_host=None, public_ip=None, rabbit_password
                      % (vncproxy_host, vncproxy_port))
     utils.set_option(NOVA_COMPUTE_CONF, 'vncserver_listen', '0.0.0.0')
     utils.set_option(NOVA_COMPUTE_CONF, 'vnc_enable', 'true')
-    utils.set_option(NOVA_COMPUTE_CONF, 'vncserver_proxyclient_address', "$my_ip")
+    utils.set_option(NOVA_COMPUTE_CONF, 'vncserver_proxyclient_address', compute_ip)
 
     utils.set_option(NOVA_COMPUTE_CONF, 'compute_driver',
                      'libvirt.LibvirtDriver')
