@@ -129,7 +129,10 @@ def configure_ubuntu_packages():
     package_ensure('python-amqp')
     package_ensure('python-software-properties')
     package_ensure('ntp')
-    package_ensure('kvm')
+    package_ensure('vlan')
+    package_ensure('bridge-utils')
+    package_ensure('python-software-properties')
+    package_ensure('python-amqp')
     package_ensure('libvirt-bin')
     package_ensure('pm-utils')
     package_ensure('nova-compute-kvm')
@@ -149,7 +152,8 @@ def uninstall_ubuntu_packages():
     package_clean('nova-compute-kvm')
     package_clean('quantum-plugin-openvswitch-agent')
     package_clean('open-iscsi')
-    package_clean('autofs')
+    package_clean('vlan')
+    package_clean('bridge-utils')
 
 
 def install():
