@@ -272,7 +272,7 @@ def configure_metadata_agent(service_user='quantum', service_pass='stackops',
     utils.set_option(QUANTUM_METADATA_CONF, 'nova_metadata_ip', metadata_ip)
     utils.set_option(QUANTUM_METADATA_CONF, 'nova_metadata_port', '8775')
     utils.set_option(QUANTUM_METADATA_CONF,
-                     'quantum_metadata_proxy_shared_secret', 'password')
+                     'metadata_proxy_shared_secret', 'password')
 
 
 def configure_l3_agent(service_user='quantum', service_pass='stackops',
