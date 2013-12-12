@@ -64,7 +64,7 @@ def install(cluster=False):
         stop()
 
 def set_config_file(service_user='quantum', service_tenant_name='service', service_pass='stackops',auth_host='127.0.0.1',
-                        auth_port='35357', auth_protocol='http'):
+                        auth_port='35357', auth_protocol='http',allow_overlapping_ips=True):
     utils.set_option(QUANTUM_API_PASTE_CONF, 'admin_tenant_name',
                      service_tenant_name, section='filter:authtoken')
     utils.set_option(QUANTUM_API_PASTE_CONF, 'admin_user',
@@ -82,6 +82,7 @@ def set_config_file(service_user='quantum', service_tenant_name='service', servi
     utils.set_option(QUANTUM_CONF, 'notification_topics',
                      'notifications,monitor')
     utils.set_option(QUANTUM_CONF, 'default_notification_level', 'INFO')
+    utils.set_option(QUANTUM_CONF, 'allow_overlapping_ips', allow_overlapping_ips)
     # Configurtin LBAAS service
     utils.set_option(QUANTUM_CONF, 'service_plugins',
                      'quantum.plugins.services.'
@@ -100,6 +101,7 @@ def set_config_file(service_user='quantum', service_tenant_name='service', servi
                      section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'auth_protocol', auth_protocol,
                      section='keystone_authtoken')
+
 
 
 def configure_ovs_plugin_vlan(config_ovs_vlan="false", vlan_start='1', vlan_end='4094',
