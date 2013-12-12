@@ -270,7 +270,7 @@ def configure_metadata_agent(user='quantum', password='stackops',
     utils.set_option(QUANTUM_METADATA_CONF, 'nova_metadata_ip', metadata_ip)
     utils.set_option(QUANTUM_METADATA_CONF, 'nova_metadata_port', '8775')
     utils.set_option(QUANTUM_METADATA_CONF,
-                     'quantum_metadata_proxy_shared_secret', 'password')
+                     'metadata_proxy_shared_secret', 'password')
 
 
 def configure_l3_agent(user='quantum', password='stackops',
@@ -343,6 +343,7 @@ def set_config_file(user='quantum', password='stackops', auth_host='127.0.0.1',
                      section='keystone_authtoken')
     utils.set_option(QUANTUM_CONF, 'auth_protocol', auth_protocol,
                      section='keystone_authtoken')
+utils.set_option(QUANTUM_CONF, 'allow_overlapping_ips', 'True')
 
 def configure_external_bridge(floating_range):
     sudo('ip addr flush dev br-ex')
