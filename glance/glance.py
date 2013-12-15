@@ -103,9 +103,9 @@ def set_config_file(service_user='glance', service_tenant_name='service', servic
                      'config_file', '/etc/glance/glance-api-paste.ini',
                      section='paste_deploy')
     utils.set_option(GLANCE_API_CONFIG,
-                     'flavor', 'keystone',
+                     'flavor', 'keystone+cachemanagement',
                      section='paste_deploy')
-    utils.set_option(GLANCE_API_CONFIG,
+    utils.set_option(GLANCE_REGISTRY_CONFIG,
                      'flavor', 'keystone',
                      section='paste_deploy')
 
@@ -113,10 +113,6 @@ def set_config_file(service_user='glance', service_tenant_name='service', servic
                      'authtoken context registryapp',
                      section='pipeline:glance-registry-keystone')
 
-    sudo("sed -i 's/^#flavor=.*$/flavor=keystone+cachemanagement/g' "
-         "/etc/glance/glance-api.conf")
-    sudo("sed -i 's/^#flavor=.*$/flavor=keystone/g' "
-         "/etc/glance/glance-registry.conf")
     start()
     sudo("glance-manage version_control 0")
     sudo("glance-manage db_sync")
@@ -127,13 +123,13 @@ def configure_local_storage(config_local_storage="true", delete_content=False, s
         if delete_content:
             sudo('rm -fr %s' % GLANCE_IMAGES)
         stop()
+        utils.set_option(GLANCE_API_CONFIG, 'default_store', 'file')
         sudo('sed -i "#%s#d" /etc/fstab' % GLANCE_IMAGES)
         sudo('mkdir -p %s' % GLANCE_IMAGES)
         with settings(warn_only=True):
             if set_glance_owner:
                 sudo('chown glance:glance -R %s' % GLANCE_IMAGES)
         start()
-
 
 def configure_nfs_storage(config_nfs_storage="false", nfs_endpoint='localhost:/mnt', delete_content=False,
                           set_glance_owner=True,
@@ -144,6 +140,7 @@ def configure_nfs_storage(config_nfs_storage="false", nfs_endpoint='localhost:/m
         if delete_content:
             sudo('rm -fr %s' % GLANCE_IMAGES)
         stop()
+        utils.set_option(GLANCE_API_CONFIG, 'default_store', 'file')
         glance_images_exists = file_exists(GLANCE_IMAGES)
         if not glance_images_exists:
             sudo('mkdir -p %s' % GLANCE_IMAGES)
@@ -156,6 +153,19 @@ def configure_nfs_storage(config_nfs_storage="false", nfs_endpoint='localhost:/m
             if set_glance_owner:
                 if not glance_images_exists:
                     sudo('chown glance:glance -R %s' % GLANCE_IMAGES)
+        start()
+
+def configure_s3_storage(config_s3_storage="false",
+                        s3_store_host='s3.amazonaws.com',s3_store_access_key='',s3_store_secret_key='',
+                        s3_store_bucket='glance-s3-bucket',s3_store_create_bucket_on_put=False):
+    if str(config_s3_storage).lower() == "true":
+        stop()
+        utils.set_option(GLANCE_API_CONFIG, 'default_store', 's3')
+        utils.set_option(GLANCE_API_CONFIG, 's3_store_host', s3_store_host)
+        utils.set_option(GLANCE_API_CONFIG, 's3_store_access_key', s3_store_access_key)
+        utils.set_option(GLANCE_API_CONFIG, 's3_store_secret_key', s3_store_secret_key)
+        utils.set_option(GLANCE_API_CONFIG, 's3_store_bucket', s3_store_bucket)
+        utils.set_option(GLANCE_API_CONFIG, 's3_store_create_bucket_on_put', s3_store_create_bucket_on_put)
         start()
 
 def publish_ttylinux(auth_uri='http://127.0.0.1:35357/v2.0',
