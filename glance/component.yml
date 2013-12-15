@@ -26,7 +26,7 @@ Services:
     - name: configure_s3_storage
       description: Configure glance for AWS S3 storage
       methods:
-          - configure_glance_storage
+          - configure_s3_storage
     - name: validate
       description: Validates glance to operate with it
       methods:
