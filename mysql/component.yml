@@ -9,7 +9,7 @@ Services:
       methods:
           - stop
     - name: install
-      description: Prepares a database and a user password for each StackOps schemas
+      description: Install and configure a database and a user password for each StackOps schemas
       methods:
           - configure
           - start
@@ -19,6 +19,10 @@ Services:
           - setup_cinder
           - setup_quantum
           - setup_automation
+    - name: configure_without_install
+      description: Configure a database and a user password for each StackOps schemas
+      methods:
+          - configure_all_schemas
     - name: set_keystone
       description: Creates a new database for keystone and grants privileges on it
       methods:

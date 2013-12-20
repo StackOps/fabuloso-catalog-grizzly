@@ -63,24 +63,25 @@ def stop():
         sudo("nohup service mysql stop")
 
 
-def setup_schema(root_pass='stackops', username=None, password=None,
-                 schema_name=None, host=None):
+def setup_schema(mysql_host='127.0.0.1',root_pass='stackops', username=None,
+                 password=None, schema_name=None, host=None):
 
-    sudo('mysql -uroot -p%s -e "DROP DATABASE IF EXISTS %s;"'
-         % (root_pass, schema_name))
-    sudo('mysql -uroot -p%s -e "CREATE DATABASE %s;"' % (root_pass,
-         schema_name))
+    sudo('mysql -h %s -u root -p%s -e "DROP DATABASE IF EXISTS %s;"'
+         % (mysql_host,root_pass, schema_name))
+    sudo('mysql -h %s -u root -p%s -e "CREATE DATABASE %s;"' % (mysql_host,
+                                                                root_pass,
+                                                                schema_name))
     if host is not None:
-        sudo("""mysql -uroot -p%s -e "GRANT ALL PRIVILEGES ON %s.* TO
+        sudo("""mysql -h %s -u root -p%s -e "GRANT ALL PRIVILEGES ON %s.* TO
              '%s'@'%s' IDENTIFIED BY '%s';" """
-             % (root_pass, schema_name, username, host, password))
+             % (mysql_host, root_pass, schema_name, username, host, password))
     else:
-        sudo("""mysql -uroot -p%s -e "GRANT ALL PRIVILEGES ON %s.*
+        sudo("""mysql -h %s -u root -p%s -e "GRANT ALL PRIVILEGES ON %s.*
              TO '%s'@'localhost' IDENTIFIED BY '%s';" """
-             % (root_pass, schema_name, username, password))
-        sudo("""mysql -uroot -p%s -e "GRANT ALL PRIVILEGES ON %s.*
+             % (mysql_host, root_pass, schema_name, username, password))
+        sudo("""mysql -h %s -u root -p%s -e "GRANT ALL PRIVILEGES ON %s.*
              TO '%s'@'%%' IDENTIFIED BY '%s';" """
-             % (root_pass, schema_name, username, password))
+             % (mysql_host, root_pass, schema_name, username, password))
 
 
 def setup_keystone(root_pass='stackops', keystone_user='keystone',
@@ -138,30 +139,31 @@ def setup_automation(root_pass='stackops', automation_user='automation',
 
 
 def configure_all_schemas(root_pass='stackops', password='stackops',
-                          mysql_host='127.0.0.1'):
+                          mysql_host='127.0.0.1', host_allowed='127.0.0.1'):
+    package_ensure('mysql-client')
     setup_schema(username='portal', schema_name='portal', root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
+                 password=password, mysql_host=mysql_host, host=host_allowed)
     setup_schema(username='keystone', schema_name='keystone',
-                 root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
+                 root_pass=root_pass, password=password, mysql_host=mysql_host,
+                 host=host_allowed)
     setup_schema(username='glance', schema_name='glance', root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
+                 password=password, mysql_host=mysql_host,
+                 host=host_allowed)
     setup_schema(username='nova', schema_name='nova', root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
+                 password=password, mysql_host=mysql_host,
+                 host=host_allowed)
     setup_schema(username='cinder', schema_name='cinder', root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
-    setup_schema(username='quantum', schema_name='quantum',
-                 root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
-    setup_schema(username='quantum', schema_name='quantum',
-                 root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
+                 password=password, mysql_host=mysql_host,
+                 host=host_allowed)
+    setup_schema(username='quantum', schema_name='quantum', root_pass=root_pass,
+                 password=password, mysql_host=mysql_host,
+                 host=host_allowed)
     setup_schema(username='accounting', schema_name='accounting',
-                 root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
-    setup_schema(username='automation', schema_name='automation',
-                 root_pass=root_pass,
-                 password=password, drop_previous=False, mysql_host=mysql_host)
+                 root_pass=root_pass, password=password, mysql_host=mysql_host,
+                 host=host_allowed)
+    setup_schema(username='chargeback', schema_name='chargeback',
+                 root_pass=root_pass, password=password,
+                 mysql_host=mysql_host, host=host_allowed)
 
 
 def validate_database(database_type, username, password, host, port,
